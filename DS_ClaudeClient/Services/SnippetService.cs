@@ -112,33 +112,6 @@ public class SnippetService
 
     private List<Snippet> GetDefaultSnippets()
     {
-        return new List<Snippet>
-        {
-            new Snippet
-            {
-                Title = "Code Review Request",
-                Content = "Please review the following code and suggest improvements for:\n- Performance\n- Readability\n- Best practices\n\n```\n[paste code here]\n```"
-            },
-            new Snippet
-            {
-                Title = "Explain Like I'm 5",
-                Content = "Can you explain this concept in simple terms that a beginner would understand?"
-            },
-            new Snippet
-            {
-                Title = "Debug Help",
-                Content = "I'm getting the following error. Can you help me understand what's wrong and how to fix it?\n\nError:\n```\n[paste error here]\n```\n\nRelevant code:\n```\n[paste code here]\n```"
-            },
-            new Snippet
-            {
-                Title = "Summarize",
-                Content = "Please provide a concise summary of the following text, highlighting the key points:\n\n"
-            },
-            new Snippet
-            {
-                Title = "Multi-line Input",
-                Content = "Here's my multi-line input:\n\nLine 1\nLine 2\nLine 3"
-            }
-        };
+        return new List<Snippet>();
     }
 }

@@ -1,4 +1,4 @@
-namespace ClaudeDesktop.Models;
+namespace DS_ClaudeClient.Models;
 
 public class AppSettings
 {

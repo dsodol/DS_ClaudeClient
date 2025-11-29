@@ -1,7 +1,7 @@
 using System.Windows;
 using System.Windows.Input;
 
-namespace ClaudeDesktop;
+namespace DS_ClaudeClient;
 
 public partial class SnippetEditDialog : Window
 {

@@ -5,8 +5,8 @@
     function enhanceTextarea() {
         const textareas = document.querySelectorAll('textarea, [contenteditable="true"], div[role="textbox"]');
         textareas.forEach(textarea => {
-            if (textarea.dataset.claudeDesktopEnhanced) return;
-            textarea.dataset.claudeDesktopEnhanced = 'true';
+            if (textarea.dataset.dsClaudeClientEnhanced) return;
+            textarea.dataset.dsClaudeClientEnhanced = 'true';
 
             // Make textarea expandable
             if (textarea.tagName === 'TEXTAREA') {
@@ -135,9 +135,9 @@
             return true;
         }
 
-        console.warn('Claude Desktop: Could not find input element');
+        console.warn('DS Claude Client: Could not find input element');
         return false;
     };
 
-    console.log('Claude Desktop enhancements loaded successfully');
+    console.log('DS Claude Client enhancements loaded successfully');
 })();

@@ -1,8 +1,8 @@
 using System.IO;
 using System.Text.Json;
-using ClaudeDesktop.Models;
+using DS_ClaudeClient.Models;
 
-namespace ClaudeDesktop.Services;
+namespace DS_ClaudeClient.Services;
 
 public class SnippetService
 {
@@ -18,9 +18,9 @@ public class SnippetService
         // Priority: OneDrive > Documents > AppData
         var possiblePaths = new[]
         {
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OneDrive", "ClaudeDesktop"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ClaudeDesktop"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClaudeDesktop")
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OneDrive", "DS_ClaudeClient"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DS_ClaudeClient"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DS_ClaudeClient")
         };
 
         // Check for existing snippets file

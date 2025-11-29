@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace ClaudeDesktop.Converters;
+namespace DS_ClaudeClient.Converters;
 
 public class BoolToVisibilityConverter : IValueConverter
 {

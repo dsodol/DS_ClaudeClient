@@ -1,7 +1,7 @@
-<Application x:Class="ClaudeDesktop.App"
+<Application x:Class="DS_ClaudeClient.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:converters="clr-namespace:ClaudeDesktop.Converters"
+             xmlns:converters="clr-namespace:DS_ClaudeClient.Converters"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <ResourceDictionary>

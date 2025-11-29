@@ -1,8 +1,8 @@
 using System.IO;
 using System.Text.Json;
-using ClaudeDesktop.Models;
+using DS_ClaudeClient.Models;
 
-namespace ClaudeDesktop.Services;
+namespace DS_ClaudeClient.Services;
 
 public class SettingsService
 {
@@ -12,7 +12,7 @@ public class SettingsService
     {
         var appDataPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "ClaudeDesktop");
+            "DS_ClaudeClient");
 
         Directory.CreateDirectory(appDataPath);
         _settingsFilePath = Path.Combine(appDataPath, "settings.json");

@@ -1,6 +1,6 @@
 using System.Windows;
 
-namespace ClaudeDesktop;
+namespace DS_ClaudeClient;
 
 public partial class App : Application
 {

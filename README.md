@@ -1,4 +1,4 @@
-# Claude Desktop Client
+# DS Claude Client
 
 A custom Windows desktop client for Claude AI with enhanced features, built with .NET 10 and WPF.
 
@@ -30,10 +30,10 @@ git clone <repo-url>
 cd DS_ClaudeClient
 
 # Build the project
-dotnet build ClaudeDesktop.sln
+dotnet build DS_ClaudeClient.sln
 
 # Run the application
-dotnet run --project ClaudeDesktop/ClaudeDesktop.csproj
+dotnet run --project DS_ClaudeClient/DS_ClaudeClient.csproj
 ```
 
 ## Publishing
@@ -42,10 +42,10 @@ To create a standalone executable:
 
 ```bash
 # Self-contained single-file executable
-dotnet publish ClaudeDesktop/ClaudeDesktop.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish
+dotnet publish DS_ClaudeClient/DS_ClaudeClient.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish
 
 # Framework-dependent (requires .NET runtime installed)
-dotnet publish ClaudeDesktop/ClaudeDesktop.csproj -c Release -r win-x64 --self-contained false -o ./publish
+dotnet publish DS_ClaudeClient/DS_ClaudeClient.csproj -c Release -r win-x64 --self-contained false -o ./publish
 ```
 
 ## Usage
@@ -64,8 +64,8 @@ dotnet publish ClaudeDesktop/ClaudeDesktop.csproj -c Release -r win-x64 --self-c
 
 ## Data Storage
 
-- **Snippets**: Stored in `OneDrive/ClaudeDesktop/snippets.json`, `Documents/ClaudeDesktop/snippets.json`, or `%LOCALAPPDATA%/ClaudeDesktop/snippets.json` (first found location wins)
-- **Settings**: Stored in `%LOCALAPPDATA%/ClaudeDesktop/settings.json`
+- **Snippets**: Stored in `OneDrive/DS_ClaudeClient/snippets.json`, `Documents/DS_ClaudeClient/snippets.json`, or `%LOCALAPPDATA%/DS_ClaudeClient/snippets.json` (first found location wins)
+- **Settings**: Stored in `%LOCALAPPDATA%/DS_ClaudeClient/settings.json`
 
 ## License
 

@@ -2,11 +2,11 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using ClaudeDesktop.Models;
-using ClaudeDesktop.Services;
+using DS_ClaudeClient.Models;
+using DS_ClaudeClient.Services;
 using Microsoft.Web.WebView2.Core;
 
-namespace ClaudeDesktop;
+namespace DS_ClaudeClient;
 
 public partial class MainWindow : Window
 {
@@ -88,7 +88,7 @@ public partial class MainWindow : Window
     private string GetEmbeddedScript(string scriptName)
     {
         var assembly = Assembly.GetExecutingAssembly();
-        var resourceName = $"ClaudeDesktop.Scripts.{scriptName}";
+        var resourceName = $"DS_ClaudeClient.Scripts.{scriptName}";
 
         using var stream = assembly.GetManifestResourceStream(resourceName);
         if (stream == null)
@@ -183,7 +183,7 @@ public partial class MainWindow : Window
                     }
                 };
 
-                console.log('Claude Desktop enhancements loaded');
+                console.log('DS Claude Client enhancements loaded');
             })();
             """;
     }
@@ -195,8 +195,8 @@ public partial class MainWindow : Window
         var script = $@"
             (function() {{
                 document.body.style.fontSize = '{fontSize}px';
-                const style = document.getElementById('claude-desktop-font-style') || document.createElement('style');
-                style.id = 'claude-desktop-font-style';
+                const style = document.getElementById('ds-claude-client-font-style') || document.createElement('style');
+                style.id = 'ds-claude-client-font-style';
                 style.textContent = `
                     body, p, span, div, textarea, input {{
                         font-size: {fontSize}px !important;
@@ -373,7 +373,7 @@ public partial class MainWindow : Window
             var result = MessageBox.Show(
                 $"Delete snippet \"{snippet.Title}\"?",
                 "Confirm Delete",
-                MessageBoxButton.YesNo,
+                MessageBoxButton.OK,
                 MessageBoxImage.Question);
 
             if (result == MessageBoxResult.Yes)
@@ -439,7 +439,7 @@ public partial class MainWindow : Window
         {
             Filter = "JSON files (*.json)|*.json",
             Title = "Export Snippets",
-            FileName = "claude-snippets.json"
+            FileName = "ds-claude-snippets.json"
         };
 
         if (dialog.ShowDialog() == true)

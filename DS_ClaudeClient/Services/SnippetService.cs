@@ -92,22 +92,58 @@ public class SnippetService
     public List<Snippet> Import(string filePath)
     {
         var json = File.ReadAllText(filePath);
-        var snippets = JsonSerializer.Deserialize<List<Snippet>>(json) ?? new List<Snippet>();
 
-        // Assign new IDs to avoid conflicts
-        foreach (var snippet in snippets)
+        // Try to detect format: Text/Description or Title/Content
+        if (json.Contains("\"Text\"") && json.Contains("\"Description\""))
         {
-            snippet.Id = Guid.NewGuid().ToString();
+            // Import from Text/Description format
+            var importItems = JsonSerializer.Deserialize<List<TextDescriptionImport>>(json) ?? new List<TextDescriptionImport>();
+            return importItems.Select(item => new Snippet
+            {
+                Id = Guid.NewGuid().ToString(),
+                Title = item.Description ?? item.Text ?? "",
+                Content = item.Text ?? "",
+                CreatedAt = DateTime.UtcNow,
+                ModifiedAt = DateTime.UtcNow
+            }).ToList();
         }
-
-        return snippets;
+        else
+        {
+            // Import from native format (Title/Content)
+            var snippets = JsonSerializer.Deserialize<List<Snippet>>(json) ?? new List<Snippet>();
+            foreach (var snippet in snippets)
+            {
+                snippet.Id = Guid.NewGuid().ToString();
+            }
+            return snippets;
+        }
     }
 
     public void Export(List<Snippet> snippets, string filePath)
     {
+        // Export in Text/Description format
+        var exportItems = snippets.Select(s => new TextDescriptionExport
+        {
+            Text = s.Content,
+            Description = s.Title
+        }).ToList();
+
         var options = new JsonSerializerOptions { WriteIndented = true };
-        var json = JsonSerializer.Serialize(snippets, options);
+        var json = JsonSerializer.Serialize(exportItems, options);
         File.WriteAllText(filePath, json);
+    }
+
+    // Helper classes for Text/Description format
+    private class TextDescriptionImport
+    {
+        public string? Text { get; set; }
+        public string? Description { get; set; }
+    }
+
+    private class TextDescriptionExport
+    {
+        public string Text { get; set; } = "";
+        public string Description { get; set; } = "";
     }
 
     private List<Snippet> GetDefaultSnippets()

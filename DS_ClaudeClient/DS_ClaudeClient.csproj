@@ -11,6 +11,7 @@
     <Version>1.0.0</Version>
     <Authors>DS_ClaudeClient</Authors>
     <Description>A custom Windows desktop client for Claude AI with enhanced features</Description>
+    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

@@ -15,42 +15,100 @@ public partial class MainWindow : Window
     private readonly SettingsService _settingsService;
     private List<Snippet> _allSnippets = new();
     private bool _isSnippetsPanelVisible = true;
+    private int _currentFontSize = 14;
+    private string _currentFontFamily = "Segoe UI";
+    private int _currentTextAreaWidth = 800;
+    private string _currentTextAreaFontFamily = "Segoe UI";
+    private int _currentTextAreaFontSize = 14;
+    private double _currentTextAreaHeight = 100;
 
     public MainWindow()
     {
-        InitializeComponent();
+        App.Log("MainWindow constructor starting...");
+        try
+        {
+            InitializeComponent();
+            App.Log("InitializeComponent completed");
 
-        _snippetService = new SnippetService();
-        _settingsService = new SettingsService();
+            _snippetService = new SnippetService();
+            _settingsService = new SettingsService();
 
-        Loaded += MainWindow_Loaded;
-        ClaudeWebView.CoreWebView2InitializationCompleted += WebView_CoreWebView2InitializationCompleted;
-        ClaudeWebView.NavigationCompleted += WebView_NavigationCompleted;
+            Loaded += MainWindow_Loaded;
+            ClaudeWebView.CoreWebView2InitializationCompleted += WebView_CoreWebView2InitializationCompleted;
+            ClaudeWebView.NavigationCompleted += WebView_NavigationCompleted;
+            App.Log("MainWindow constructor completed");
+        }
+        catch (Exception ex)
+        {
+            App.Log($"MainWindow constructor error: {ex}");
+            throw;
+        }
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
-        // Load settings
-        var settings = _settingsService.Load();
-        FontSizeSlider.Value = settings.FontSize;
-        Topmost = settings.AlwaysOnTop;
-        UpdateTopmostButton();
-
-        if (settings.WindowWidth > 0 && settings.WindowHeight > 0)
+        App.Log("MainWindow_Loaded starting...");
+        try
         {
-            Width = settings.WindowWidth;
-            Height = settings.WindowHeight;
+            // Load settings
+            var settings = _settingsService.Load();
+            _currentFontSize = settings.FontSize;
+            _currentFontFamily = settings.FontFamily;
+            _currentTextAreaWidth = settings.TextAreaWidth;
+            _currentTextAreaFontFamily = settings.TextAreaFontFamily;
+            _currentTextAreaFontSize = settings.TextAreaFontSize;
+            _currentTextAreaHeight = settings.TextAreaHeight;
+            Topmost = settings.AlwaysOnTop;
+            UpdateTopmostButton();
+            ApplyTextAreaWidth(_currentTextAreaWidth);
+            ApplyTextAreaFont(_currentTextAreaFontFamily, _currentTextAreaFontSize);
+            ApplyTextAreaHeight(_currentTextAreaHeight);
+
+            // Restore window position and size
+            if (settings.WindowWidth > 0 && settings.WindowHeight > 0)
+            {
+                Width = settings.WindowWidth;
+                Height = settings.WindowHeight;
+            }
+
+            if (settings.WindowLeft >= 0 && settings.WindowTop >= 0)
+            {
+                Left = settings.WindowLeft;
+                Top = settings.WindowTop;
+                WindowStartupLocation = WindowStartupLocation.Manual;
+            }
+
+            if (settings.IsMaximized)
+            {
+                WindowState = WindowState.Maximized;
+            }
+
+            _isSnippetsPanelVisible = settings.SnippetsPanelVisible;
+            SnippetsPanel.Visibility = _isSnippetsPanelVisible ? Visibility.Visible : Visibility.Collapsed;
+
+            // Load snippets
+            _allSnippets = _snippetService.Load();
+            RefreshSnippetsList();
+            App.Log("Settings and snippets loaded");
+
+            // Initialize WebView2 with persistent user data folder
+            var userDataFolder = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "DS_ClaudeClient", "WebView2");
+
+            App.Log($"Creating WebView2 environment at: {userDataFolder}");
+            var env = await CoreWebView2Environment.CreateAsync(null, userDataFolder);
+            App.Log("WebView2 environment created");
+            await ClaudeWebView.EnsureCoreWebView2Async(env);
+            App.Log("WebView2 initialized, navigating to Claude.ai");
+            ClaudeWebView.Source = new Uri("https://claude.ai");
+            App.Log("MainWindow_Loaded completed");
         }
-
-        _isSnippetsPanelVisible = settings.SnippetsPanelVisible;
-        SnippetsPanel.Visibility = _isSnippetsPanelVisible ? Visibility.Visible : Visibility.Collapsed;
-
-        // Load snippets
-        _allSnippets = _snippetService.Load();
-        RefreshSnippetsList();
-
-        // Initialize WebView2
-        await ClaudeWebView.EnsureCoreWebView2Async();
+        catch (Exception ex)
+        {
+            App.Log($"MainWindow_Loaded error: {ex}");
+            throw;
+        }
     }
 
     private void WebView_CoreWebView2InitializationCompleted(object? sender, CoreWebView2InitializationCompletedEventArgs e)
@@ -63,7 +121,7 @@ public partial class MainWindow : Window
             ClaudeWebView.CoreWebView2.Settings.IsZoomControlEnabled = true;
 
             // Apply font size
-            ApplyFontSize((int)FontSizeSlider.Value);
+            ApplyFontSize(_currentFontSize);
         }
     }
 
@@ -73,7 +131,7 @@ public partial class MainWindow : Window
         {
             // Inject enhancement scripts after page loads
             await InjectEnhancementScripts();
-            ApplyFontSize((int)FontSizeSlider.Value);
+            ApplyFontSize(_currentFontSize);
         }
     }
 
@@ -106,82 +164,112 @@ public partial class MainWindow : Window
     {
         return """
             (function() {
-                // Multi-line entry enhancement
-                function enhanceTextarea() {
-                    const textareas = document.querySelectorAll('textarea, [contenteditable="true"], div[role="textbox"]');
-                    textareas.forEach(textarea => {
-                        if (textarea.dataset.enhanced) return;
-                        textarea.dataset.enhanced = 'true';
-
-                        // Make textarea expandable
-                        if (textarea.tagName === 'TEXTAREA') {
-                            textarea.style.minHeight = '100px';
-                            textarea.style.maxHeight = '400px';
-                            textarea.style.resize = 'vertical';
-                        }
-
-                        // Handle Shift+Enter for new line
-                        textarea.addEventListener('keydown', function(e) {
-                            if (e.key === 'Enter' && e.shiftKey) {
-                                e.stopPropagation();
-                                // Allow default behavior for new line
-                            }
-                        });
-                    });
-                }
-
-                // Run on page load and observe for dynamic content
-                enhanceTextarea();
-
-                const observer = new MutationObserver(() => {
-                    enhanceTextarea();
-                });
-
-                observer.observe(document.body, {
-                    childList: true,
-                    subtree: true
-                });
-
-                // Expose function to insert snippet text
+                // Expose function to insert snippet text into Claude's ProseMirror editor
                 window.insertSnippetText = function(text) {
-                    const activeElement = document.activeElement;
-                    const textInputs = document.querySelectorAll('textarea, [contenteditable="true"], div[role="textbox"]');
+                    // Claude.ai uses a ProseMirror editor with contenteditable
+                    const selectors = [
+                        '[contenteditable="true"].ProseMirror',
+                        'div[contenteditable="true"]',
+                        '[role="textbox"][contenteditable="true"]',
+                        'textarea'
+                    ];
 
-                    // Find the main input area
                     let targetInput = null;
-                    textInputs.forEach(input => {
-                        if (input.closest('form') || input.closest('[data-testid]')) {
-                            targetInput = input;
-                        }
-                    });
-
-                    if (!targetInput && textInputs.length > 0) {
-                        targetInput = textInputs[textInputs.length - 1];
+                    for (const selector of selectors) {
+                        targetInput = document.querySelector(selector);
+                        if (targetInput) break;
                     }
 
-                    if (targetInput) {
-                        if (targetInput.tagName === 'TEXTAREA' || targetInput.tagName === 'INPUT') {
-                            const start = targetInput.selectionStart;
-                            const end = targetInput.selectionEnd;
-                            const value = targetInput.value;
-                            targetInput.value = value.substring(0, start) + text + value.substring(end);
-                            targetInput.selectionStart = targetInput.selectionEnd = start + text.length;
-                            targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-                        } else {
-                            // ContentEditable or div with role="textbox"
-                            const selection = window.getSelection();
-                            if (selection.rangeCount > 0) {
-                                const range = selection.getRangeAt(0);
-                                range.deleteContents();
-                                range.insertNode(document.createTextNode(text));
-                                range.collapse(false);
-                            } else {
-                                targetInput.textContent += text;
+                    if (!targetInput) {
+                        console.log('DS Claude Client: No input found');
+                        return false;
+                    }
+
+                    targetInput.focus();
+
+                    if (targetInput.tagName === 'TEXTAREA') {
+                        const start = targetInput.selectionStart || 0;
+                        const end = targetInput.selectionEnd || 0;
+                        const value = targetInput.value || '';
+                        targetInput.value = value.substring(0, start) + text + value.substring(end);
+                        targetInput.selectionStart = targetInput.selectionEnd = start + text.length;
+                        targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    } else {
+                        // For ProseMirror/contenteditable, use execCommand or direct insertion
+                        // First, try to set cursor at the end
+                        const selection = window.getSelection();
+                        const range = document.createRange();
+
+                        // Move cursor to end of content
+                        range.selectNodeContents(targetInput);
+                        range.collapse(false);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+
+                        // Insert text using execCommand (works with ProseMirror)
+                        document.execCommand('insertText', false, text);
+                    }
+
+                    console.log('DS Claude Client: Text inserted');
+                    return true;
+                };
+
+                // Expose function to click the send button
+                window.clickSendButton = function() {
+                    // Try multiple selectors for the send button
+                    const selectors = [
+                        'button[aria-label="Send Message"]',
+                        'button[aria-label*="Send"]',
+                        'button[data-testid="send-button"]',
+                        'button[type="submit"]',
+                        'form button:last-of-type',
+                        'button svg[viewBox]' // Button containing an SVG (arrow icon)
+                    ];
+
+                    for (const selector of selectors) {
+                        let button = document.querySelector(selector);
+                        // If we found an SVG, get its parent button
+                        if (button && button.tagName === 'svg') {
+                            button = button.closest('button');
+                        }
+                        if (button && !button.disabled) {
+                            button.click();
+                            console.log('DS Claude Client: Send button clicked via', selector);
+                            return true;
+                        }
+                    }
+
+                    // Fallback: Find button by looking for arrow/send icon
+                    const buttons = document.querySelectorAll('button');
+                    for (const btn of buttons) {
+                        if (btn.querySelector('svg') && !btn.disabled) {
+                            const rect = btn.getBoundingClientRect();
+                            // Look for buttons in the input area (bottom of page, reasonable size)
+                            if (rect.bottom > window.innerHeight - 200 && rect.width < 100) {
+                                btn.click();
+                                console.log('DS Claude Client: Send button clicked via fallback');
+                                return true;
                             }
-                            targetInput.dispatchEvent(new Event('input', { bubbles: true }));
                         }
-                        targetInput.focus();
                     }
+
+                    // Last resort: simulate Enter key
+                    const input = document.querySelector('[contenteditable="true"].ProseMirror, div[contenteditable="true"]');
+                    if (input) {
+                        input.dispatchEvent(new KeyboardEvent('keydown', {
+                            key: 'Enter',
+                            code: 'Enter',
+                            keyCode: 13,
+                            which: 13,
+                            bubbles: true,
+                            cancelable: true
+                        }));
+                        console.log('DS Claude Client: Enter key simulated');
+                        return true;
+                    }
+
+                    console.log('DS Claude Client: Could not find send button');
+                    return false;
                 };
 
                 console.log('DS Claude Client enhancements loaded');
@@ -261,6 +349,12 @@ public partial class MainWindow : Window
         var exportItem = new MenuItem { Header = "Export Snippets..." };
         exportItem.Click += ExportSnippets_Click;
         contextMenu.Items.Add(exportItem);
+
+        contextMenu.Items.Add(new Separator());
+
+        var optionsItem = new MenuItem { Header = "Options..." };
+        optionsItem.Click += OptionsButton_Click;
+        contextMenu.Items.Add(optionsItem);
 
         contextMenu.IsOpen = true;
     }
@@ -459,27 +553,112 @@ public partial class MainWindow : Window
 
     #endregion
 
+    #region Message Input
+
+    private async void MessageInput_KeyDown(object sender, KeyEventArgs e)
+    {
+        // Shift+Enter or Ctrl+Enter to send
+        if (e.Key == Key.Enter &&
+            ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift ||
+             (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control))
+        {
+            await SendMessage();
+            e.Handled = true;
+        }
+    }
+
+    private async void SendButton_Click(object sender, RoutedEventArgs e)
+    {
+        await SendMessage();
+    }
+
+    private async Task SendMessage()
+    {
+        var message = MessageInput.Text?.Trim();
+        if (string.IsNullOrEmpty(message)) return;
+
+        // Insert text into Claude's input and submit
+        await InsertSnippetIntoClaudeInput(message);
+
+        // Try to click the send button in Claude.ai
+        await ClickClaudeSendButton();
+
+        // Clear the input
+        MessageInput.Text = string.Empty;
+        MessageInput.Focus();
+    }
+
+    private async Task ClickClaudeSendButton()
+    {
+        if (ClaudeWebView.CoreWebView2 == null) return;
+
+        await ClaudeWebView.CoreWebView2.ExecuteScriptAsync("window.clickSendButton();");
+    }
+
+    #endregion
+
     #region Settings
 
-    private void FontSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    private void OptionsButton_Click(object sender, RoutedEventArgs e)
     {
-        if (FontSizeLabel == null) return;
+        var dialog = new OptionsDialog(_currentFontSize, _currentFontFamily, _currentTextAreaWidth,
+            _currentTextAreaFontFamily, _currentTextAreaFontSize);
+        dialog.Owner = this;
 
-        var fontSize = (int)e.NewValue;
-        FontSizeLabel.Text = $"{fontSize}px";
-        ApplyFontSize(fontSize);
-        SaveSettings();
+        if (dialog.ShowDialog() == true)
+        {
+            _currentFontSize = dialog.FontSize;
+            _currentFontFamily = dialog.SelectedFontFamily;
+            _currentTextAreaWidth = dialog.TextAreaWidth;
+            _currentTextAreaFontFamily = dialog.TextAreaFontFamily;
+            _currentTextAreaFontSize = dialog.TextAreaFontSize;
+            ApplyFontSize(_currentFontSize);
+            ApplyTextAreaWidth(_currentTextAreaWidth);
+            ApplyTextAreaFont(_currentTextAreaFontFamily, _currentTextAreaFontSize);
+            SaveSettings();
+        }
+    }
+
+    private void ApplyTextAreaWidth(int width)
+    {
+        TextAreaGrid.MaxWidth = width * 2;
+        TextAreaGrid.ColumnDefinitions[0].MinWidth = width;
+    }
+
+    private void ApplyTextAreaFont(string fontFamily, int fontSize)
+    {
+        MessageInput.FontFamily = new System.Windows.Media.FontFamily(fontFamily);
+        MessageInput.FontSize = fontSize;
+    }
+
+    private void ApplyTextAreaHeight(double height)
+    {
+        TextAreaRow.Height = new GridLength(height);
     }
 
     private void SaveSettings()
     {
+        // Store restore bounds when maximized
+        var restoreBounds = WindowState == WindowState.Maximized ? RestoreBounds : new Rect(Left, Top, Width, Height);
+
+        // Get current text area height from the row definition
+        var textAreaHeight = TextAreaRow.Height.Value;
+
         var settings = new AppSettings
         {
-            FontSize = (int)FontSizeSlider.Value,
+            FontSize = _currentFontSize,
+            FontFamily = _currentFontFamily,
+            TextAreaWidth = _currentTextAreaWidth,
+            TextAreaFontFamily = _currentTextAreaFontFamily,
+            TextAreaFontSize = _currentTextAreaFontSize,
+            TextAreaHeight = textAreaHeight,
             AlwaysOnTop = Topmost,
             SnippetsPanelVisible = _isSnippetsPanelVisible,
-            WindowWidth = Width,
-            WindowHeight = Height
+            WindowWidth = restoreBounds.Width,
+            WindowHeight = restoreBounds.Height,
+            WindowLeft = restoreBounds.Left,
+            WindowTop = restoreBounds.Top,
+            IsMaximized = WindowState == WindowState.Maximized
         };
 
         _settingsService.Save(settings);

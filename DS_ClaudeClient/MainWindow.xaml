@@ -101,11 +101,11 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Left Panel: WebView + Input -->
-                <Grid Grid.Column="0">
+                <Grid x:Name="LeftPanelGrid" Grid.Column="0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="3"/>
-                        <RowDefinition Height="100" MinHeight="60" MaxHeight="400"/>
+                        <RowDefinition x:Name="TextAreaRow" Height="100" MinHeight="60" MaxHeight="400"/>
                     </Grid.RowDefinitions>
 
                     <!-- WebView2 for Claude.ai -->
@@ -125,9 +125,9 @@
                             BorderBrush="{StaticResource BorderBrush}"
                             BorderThickness="0,1,0,0"
                             Padding="12,10">
-                        <Grid HorizontalAlignment="Center" MaxWidth="800">
+                        <Grid x:Name="TextAreaGrid" HorizontalAlignment="Center" MaxWidth="1600">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" MinWidth="400"/>
+                                <ColumnDefinition Width="*" MinWidth="800"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
@@ -148,7 +148,7 @@
                                         Click="SendButton_Click"
                                         Style="{StaticResource SendButtonStyle}"
                                         Padding="16,10"
-                                        ToolTip="Send message (Ctrl+Enter)"/>
+                                        ToolTip="Send message (Shift+Enter or Ctrl+Enter)"/>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -183,12 +183,18 @@
                                            FontWeight="SemiBold"
                                            FontSize="14"
                                            Foreground="{StaticResource TextBrush}"/>
-                                <Button Grid.Column="1"
-                                        Style="{StaticResource IconButtonStyle}"
-                                        Click="AddSnippet_Click"
-                                        ToolTip="Add Snippet">
-                                    <TextBlock Text="+" FontSize="18" FontWeight="Bold"/>
-                                </Button>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <Button Style="{StaticResource IconButtonStyle}"
+                                            Click="ImportSnippets_Click"
+                                            ToolTip="Import Snippets">
+                                        <TextBlock Text="&#x1F4C2;" FontSize="12"/>
+                                    </Button>
+                                    <Button Style="{StaticResource IconButtonStyle}"
+                                            Click="AddSnippet_Click"
+                                            ToolTip="Add Snippet">
+                                        <TextBlock Text="+" FontSize="18" FontWeight="Bold"/>
+                                    </Button>
+                                </StackPanel>
                             </Grid>
                         </Border>
 

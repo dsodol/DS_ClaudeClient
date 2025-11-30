@@ -62,6 +62,11 @@
                             <TextBlock Text="&#x2699;" FontSize="14"/>
                         </Button>
                         <Button Style="{StaticResource IconButtonStyle}"
+                                Click="ShowHistory_Click"
+                                ToolTip="Message History">
+                            <TextBlock Text="&#x1F4DC;" FontSize="12"/>
+                        </Button>
+                        <Button Style="{StaticResource IconButtonStyle}"
                                 Click="ToggleTopmost_Click"
                                 x:Name="TopmostButton"
                                 ToolTip="Toggle Always on Top">
@@ -98,6 +103,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition x:Name="SnippetsPanelColumn" Width="280" MinWidth="200" MaxWidth="500"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Left Panel: WebView + Input -->
@@ -125,39 +131,55 @@
                             BorderBrush="{StaticResource BorderBrush}"
                             BorderThickness="0,1,0,0"
                             Padding="12,10">
-                        <Grid x:Name="TextAreaGrid" HorizontalAlignment="Center" MaxWidth="1600">
+                        <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" MinWidth="800"/>
-                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition x:Name="TextAreaColumn" Width="Auto" MaxWidth="1600"/>
+                                <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <TextBox x:Name="MessageInput"
-                                     Grid.Column="0"
-                                     AcceptsReturn="True"
-                                     AcceptsTab="True"
-                                     TextWrapping="Wrap"
-                                     VerticalScrollBarVisibility="Auto"
-                                     Margin="0,0,10,0"
-                                     KeyDown="MessageInput_KeyDown"
-                                     Style="{StaticResource MessageInputStyle}"/>
+                            <Grid x:Name="TextAreaGrid" Grid.Column="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" MinWidth="800"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                            <StackPanel Grid.Column="1"
-                                        VerticalAlignment="Bottom"
-                                        Orientation="Vertical">
-                                <Button Content="Send"
-                                        Click="SendButton_Click"
-                                        Style="{StaticResource SendButtonStyle}"
-                                        Padding="16,10"
-                                        ToolTip="Send message (Shift+Enter or Ctrl+Enter)"/>
-                            </StackPanel>
+                                <TextBox x:Name="MessageInput"
+                                         Grid.Column="0"
+                                         AcceptsReturn="True"
+                                         AcceptsTab="True"
+                                         TextWrapping="Wrap"
+                                         VerticalScrollBarVisibility="Auto"
+                                         Margin="0,0,10,0"
+                                         PreviewKeyDown="MessageInput_PreviewKeyDown"
+                                         Style="{StaticResource MessageInputStyle}"/>
+
+                                <StackPanel Grid.Column="1"
+                                            VerticalAlignment="Bottom"
+                                            Orientation="Vertical">
+                                    <Button Content="Send"
+                                            Click="SendButton_Click"
+                                            Style="{StaticResource SendButtonStyle}"
+                                            Padding="16,10"
+                                            ToolTip="Send message (Shift+Enter or Ctrl+Enter)"/>
+                                </StackPanel>
+                            </Grid>
                         </Grid>
                     </Border>
                 </Grid>
 
+                <!-- Snippets Panel Splitter -->
+                <GridSplitter x:Name="SnippetsSplitter"
+                              Grid.Column="1"
+                              Width="4"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Stretch"
+                              Background="{StaticResource BorderBrush}"
+                              Cursor="SizeWE"/>
+
                 <!-- Snippets Panel -->
                 <Border x:Name="SnippetsPanel"
-                        Grid.Column="1"
-                        Width="280"
+                        Grid.Column="2"
                         Background="{StaticResource SurfaceBrush}"
                         BorderBrush="{StaticResource BorderBrush}"
                         BorderThickness="1,0,0,0">
@@ -184,6 +206,11 @@
                                            FontSize="14"
                                            Foreground="{StaticResource TextBrush}"/>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <Button Style="{StaticResource IconButtonStyle}"
+                                            Click="SortSnippets_Click"
+                                            ToolTip="Sort Snippets">
+                                        <TextBlock Text="&#x2195;" FontSize="12"/>
+                                    </Button>
                                     <Button Style="{StaticResource IconButtonStyle}"
                                             Click="ImportSnippets_Click"
                                             ToolTip="Import Snippets">
@@ -223,61 +250,63 @@
                         </TextBox>
 
                         <!-- Snippets List -->
-                        <ScrollViewer Grid.Row="2"
-                                      VerticalScrollBarVisibility="Auto"
-                                      Padding="12,0">
-                            <ItemsControl x:Name="SnippetsList">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Style="{StaticResource SnippetItemStyle}"
-                                                MouseLeftButtonDown="Snippet_MouseLeftButtonDown"
-                                                Tag="{Binding}">
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-
-                                                <TextBlock Grid.Row="0" Grid.Column="0"
-                                                           Text="{Binding Title}"
-                                                           FontWeight="SemiBold"
-                                                           Foreground="{StaticResource TextBrush}"
-                                                           TextTrimming="CharacterEllipsis"/>
-
-                                                <StackPanel Grid.Row="0" Grid.Column="1"
-                                                            Orientation="Horizontal">
+                        <ListView x:Name="SnippetsList"
+                                  Grid.Row="2"
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  Foreground="{StaticResource TextBrush}"
+                                  SelectionMode="Single"
+                                  MouseDoubleClick="SnippetsList_MouseDoubleClick"
+                                  AllowDrop="True"
+                                  PreviewMouseLeftButtonDown="SnippetsList_PreviewMouseLeftButtonDown"
+                                  PreviewMouseMove="SnippetsList_PreviewMouseMove"
+                                  Drop="SnippetsList_Drop"
+                                  DragEnter="SnippetsList_DragEnter">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Content" Width="140" DisplayMemberBinding="{Binding Preview}"/>
+                                    <GridViewColumn Header="Title" Width="80" DisplayMemberBinding="{Binding Title}"/>
+                                    <GridViewColumn Header="" Width="50">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
                                                     <Button Style="{StaticResource IconButtonStyle}"
                                                             Click="EditSnippet_Click"
                                                             Tag="{Binding}"
                                                             ToolTip="Edit"
-                                                            Padding="4,2">
-                                                        <TextBlock Text="&#x270E;" FontSize="12"/>
+                                                            Padding="2,0">
+                                                        <TextBlock Text="&#x270E;" FontSize="10"/>
                                                     </Button>
                                                     <Button Style="{StaticResource IconButtonStyle}"
                                                             Click="DeleteSnippet_Click"
                                                             Tag="{Binding}"
                                                             ToolTip="Delete"
-                                                            Padding="4,2">
+                                                            Padding="2,0">
                                                         <TextBlock Text="&#x2715;" FontSize="10"/>
                                                     </Button>
                                                 </StackPanel>
-
-                                                <TextBlock Grid.Row="1" Grid.ColumnSpan="2"
-                                                           Text="{Binding Preview}"
-                                                           Foreground="{StaticResource TextSecondaryBrush}"
-                                                           FontSize="11"
-                                                           TextTrimming="CharacterEllipsis"
-                                                           Margin="0,4,0,0"/>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+                                    <Setter Property="Padding" Value="4,2"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="{StaticResource HoverBrush}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
 
                     </Grid>
                 </Border>

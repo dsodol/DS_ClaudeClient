@@ -7,8 +7,9 @@ public class Snippet
     public string Content { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime ModifiedAt { get; set; } = DateTime.UtcNow;
+    public int Order { get; set; } = 0;
 
-    public string Preview => Content.Length > 50
-        ? Content.Substring(0, 50).Replace("\n", " ").Replace("\r", "") + "..."
+    public string Preview => Content.Length > 100
+        ? Content.Substring(0, 100).Replace("\n", " ").Replace("\r", "") + "..."
         : Content.Replace("\n", " ").Replace("\r", "");
 }

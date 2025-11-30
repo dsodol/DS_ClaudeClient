@@ -6,6 +6,7 @@ public class AppSettings
     public string FontFamily { get; set; } = "Segoe UI";
     public bool AlwaysOnTop { get; set; } = false;
     public bool SnippetsPanelVisible { get; set; } = true;
+    public double SnippetsPanelWidth { get; set; } = 280;
     public double WindowWidth { get; set; } = 1200;
     public double WindowHeight { get; set; } = 700;
     public double WindowLeft { get; set; } = -1;

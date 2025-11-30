@@ -9,6 +9,8 @@ using Microsoft.Web.WebView2.Core;
 
 namespace DS_ClaudeClient;
 
+public enum SnippetSortMode { Custom, Title, DateCreated }
+
 public partial class MainWindow : Window
 {
     private readonly SnippetService _snippetService;
@@ -21,6 +23,12 @@ public partial class MainWindow : Window
     private string _currentTextAreaFontFamily = "Segoe UI";
     private int _currentTextAreaFontSize = 14;
     private double _currentTextAreaHeight = 100;
+    private Point _dragStartPoint;
+    private SnippetSortMode _currentSortMode = SnippetSortMode.Custom;
+    private bool _sortAscending = true;
+    private bool _lastFocusWasMessageInput = false;
+    private double _currentSnippetsPanelWidth = 280;
+    private readonly List<string> _messageHistory = new();
 
     public MainWindow()
     {
@@ -84,12 +92,17 @@ public partial class MainWindow : Window
             }
 
             _isSnippetsPanelVisible = settings.SnippetsPanelVisible;
-            SnippetsPanel.Visibility = _isSnippetsPanelVisible ? Visibility.Visible : Visibility.Collapsed;
+            _currentSnippetsPanelWidth = settings.SnippetsPanelWidth;
+            UpdateSnippetsPanelVisibility();
 
             // Load snippets
             _allSnippets = _snippetService.Load();
             RefreshSnippetsList();
             App.Log("Settings and snippets loaded");
+
+            // Track focus - remember last focused element for snippet insertion
+            MessageInput.GotFocus += (s, args) => _lastFocusWasMessageInput = true;
+            ClaudeWebView.GotFocus += (s, args) => _lastFocusWasMessageInput = false;
 
             // Initialize WebView2 with persistent user data folder
             var userDataFolder = Path.Combine(
@@ -168,7 +181,9 @@ public partial class MainWindow : Window
                 window.insertSnippetText = function(text) {
                     // Claude.ai uses a ProseMirror editor with contenteditable
                     const selectors = [
+                        'div.ProseMirror[contenteditable="true"]',
                         '[contenteditable="true"].ProseMirror',
+                        'div[contenteditable="true"][data-placeholder]',
                         'div[contenteditable="true"]',
                         '[role="textbox"][contenteditable="true"]',
                         'textarea'
@@ -177,7 +192,10 @@ public partial class MainWindow : Window
                     let targetInput = null;
                     for (const selector of selectors) {
                         targetInput = document.querySelector(selector);
-                        if (targetInput) break;
+                        if (targetInput) {
+                            console.log('DS Claude Client: Found input via', selector);
+                            break;
+                        }
                     }
 
                     if (!targetInput) {
@@ -187,30 +205,44 @@ public partial class MainWindow : Window
 
                     targetInput.focus();
 
-                    if (targetInput.tagName === 'TEXTAREA') {
-                        const start = targetInput.selectionStart || 0;
-                        const end = targetInput.selectionEnd || 0;
-                        const value = targetInput.value || '';
-                        targetInput.value = value.substring(0, start) + text + value.substring(end);
-                        targetInput.selectionStart = targetInput.selectionEnd = start + text.length;
-                        targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    } else {
-                        // For ProseMirror/contenteditable, use execCommand or direct insertion
-                        // First, try to set cursor at the end
-                        const selection = window.getSelection();
-                        const range = document.createRange();
+                    // Small delay to ensure focus is established
+                    setTimeout(() => {
+                        if (targetInput.tagName === 'TEXTAREA') {
+                            const start = targetInput.selectionStart || 0;
+                            const end = targetInput.selectionEnd || 0;
+                            const value = targetInput.value || '';
+                            targetInput.value = value.substring(0, start) + text + value.substring(end);
+                            targetInput.selectionStart = targetInput.selectionEnd = start + text.length;
+                            targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        } else {
+                            // For ProseMirror/contenteditable
+                            const selection = window.getSelection();
+                            const range = document.createRange();
 
-                        // Move cursor to end of content
-                        range.selectNodeContents(targetInput);
-                        range.collapse(false);
-                        selection.removeAllRanges();
-                        selection.addRange(range);
+                            // Move cursor to end of content
+                            range.selectNodeContents(targetInput);
+                            range.collapse(false);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
 
-                        // Insert text using execCommand (works with ProseMirror)
-                        document.execCommand('insertText', false, text);
-                    }
+                            // Insert text - try multiple methods
+                            if (document.execCommand('insertText', false, text)) {
+                                console.log('DS Claude Client: Text inserted via execCommand');
+                            } else {
+                                // Fallback: create text node and insert
+                                const textNode = document.createTextNode(text);
+                                range.insertNode(textNode);
+                                range.setStartAfter(textNode);
+                                range.collapse(true);
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                                // Trigger input event for ProseMirror
+                                targetInput.dispatchEvent(new InputEvent('input', { bubbles: true, data: text }));
+                                console.log('DS Claude Client: Text inserted via textNode');
+                            }
+                        }
+                    }, 50);
 
-                    console.log('DS Claude Client: Text inserted');
                     return true;
                 };
 
@@ -218,54 +250,52 @@ public partial class MainWindow : Window
                 window.clickSendButton = function() {
                     // Try multiple selectors for the send button
                     const selectors = [
+                        'button[aria-label="Send message"]',
                         'button[aria-label="Send Message"]',
                         'button[aria-label*="Send"]',
                         'button[data-testid="send-button"]',
-                        'button[type="submit"]',
-                        'form button:last-of-type',
-                        'button svg[viewBox]' // Button containing an SVG (arrow icon)
+                        'button[data-testid*="send"]',
+                        'fieldset button[type="button"]',
+                        'form button[type="button"]:not([aria-label*="Upload"])',
+                        'button[type="submit"]'
                     ];
 
                     for (const selector of selectors) {
-                        let button = document.querySelector(selector);
-                        // If we found an SVG, get its parent button
-                        if (button && button.tagName === 'svg') {
-                            button = button.closest('button');
-                        }
-                        if (button && !button.disabled) {
-                            button.click();
-                            console.log('DS Claude Client: Send button clicked via', selector);
-                            return true;
-                        }
-                    }
-
-                    // Fallback: Find button by looking for arrow/send icon
-                    const buttons = document.querySelectorAll('button');
-                    for (const btn of buttons) {
-                        if (btn.querySelector('svg') && !btn.disabled) {
-                            const rect = btn.getBoundingClientRect();
-                            // Look for buttons in the input area (bottom of page, reasonable size)
-                            if (rect.bottom > window.innerHeight - 200 && rect.width < 100) {
-                                btn.click();
-                                console.log('DS Claude Client: Send button clicked via fallback');
-                                return true;
+                        const buttons = document.querySelectorAll(selector);
+                        for (const button of buttons) {
+                            if (button && !button.disabled) {
+                                // Check if it's likely a send button (has SVG, is in lower part of page)
+                                const rect = button.getBoundingClientRect();
+                                if (rect.bottom > window.innerHeight / 2) {
+                                    button.click();
+                                    console.log('DS Claude Client: Send button clicked via', selector);
+                                    return true;
+                                }
                             }
                         }
                     }
 
-                    // Last resort: simulate Enter key
-                    const input = document.querySelector('[contenteditable="true"].ProseMirror, div[contenteditable="true"]');
-                    if (input) {
-                        input.dispatchEvent(new KeyboardEvent('keydown', {
-                            key: 'Enter',
-                            code: 'Enter',
-                            keyCode: 13,
-                            which: 13,
-                            bubbles: true,
-                            cancelable: true
-                        }));
-                        console.log('DS Claude Client: Enter key simulated');
-                        return true;
+                    // Fallback: Find the rightmost button near the input that's not disabled
+                    const inputArea = document.querySelector('div.ProseMirror[contenteditable="true"], div[contenteditable="true"]');
+                    if (inputArea) {
+                        const container = inputArea.closest('fieldset') || inputArea.closest('form') || inputArea.parentElement?.parentElement;
+                        if (container) {
+                            const buttons = container.querySelectorAll('button:not([disabled])');
+                            let sendBtn = null;
+                            let maxRight = 0;
+                            for (const btn of buttons) {
+                                const rect = btn.getBoundingClientRect();
+                                if (rect.right > maxRight && btn.querySelector('svg')) {
+                                    maxRight = rect.right;
+                                    sendBtn = btn;
+                                }
+                            }
+                            if (sendBtn) {
+                                sendBtn.click();
+                                console.log('DS Claude Client: Send button clicked via container search');
+                                return true;
+                            }
+                        }
                     }
 
                     console.log('DS Claude Client: Could not find send button');
@@ -342,6 +372,12 @@ public partial class MainWindow : Window
 
         contextMenu.Items.Add(new Separator());
 
+        var historyItem = new MenuItem { Header = "Message History..." };
+        historyItem.Click += ShowHistory_Click;
+        contextMenu.Items.Add(historyItem);
+
+        contextMenu.Items.Add(new Separator());
+
         var importItem = new MenuItem { Header = "Import Snippets..." };
         importItem.Click += ImportSnippets_Click;
         contextMenu.Items.Add(importItem);
@@ -375,8 +411,30 @@ public partial class MainWindow : Window
     private void ToggleSnippets_Click(object sender, RoutedEventArgs e)
     {
         _isSnippetsPanelVisible = !_isSnippetsPanelVisible;
-        SnippetsPanel.Visibility = _isSnippetsPanelVisible ? Visibility.Visible : Visibility.Collapsed;
+        UpdateSnippetsPanelVisibility();
         SaveSettings();
+    }
+
+    private void UpdateSnippetsPanelVisibility()
+    {
+        if (_isSnippetsPanelVisible)
+        {
+            SnippetsPanel.Visibility = Visibility.Visible;
+            SnippetsSplitter.Visibility = Visibility.Visible;
+            SnippetsPanelColumn.Width = new GridLength(_currentSnippetsPanelWidth);
+            SnippetsPanelColumn.MinWidth = 200;
+            SnippetsPanelColumn.MaxWidth = 500;
+        }
+        else
+        {
+            // Save current width before hiding
+            _currentSnippetsPanelWidth = SnippetsPanelColumn.Width.Value;
+            SnippetsPanel.Visibility = Visibility.Collapsed;
+            SnippetsSplitter.Visibility = Visibility.Collapsed;
+            SnippetsPanelColumn.Width = new GridLength(0);
+            SnippetsPanelColumn.MinWidth = 0;
+            SnippetsPanelColumn.MaxWidth = 0;
+        }
     }
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e)
@@ -410,13 +468,29 @@ public partial class MainWindow : Window
 
     private void RefreshSnippetsList(string? filter = null)
     {
-        var snippets = string.IsNullOrWhiteSpace(filter)
-            ? _allSnippets
-            : _allSnippets.Where(s =>
-                s.Title.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
-                s.Content.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+        IEnumerable<Snippet> snippets = _allSnippets;
 
-        SnippetsList.ItemsSource = snippets;
+        // Apply filter
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            snippets = snippets.Where(s =>
+                s.Title.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                s.Content.Contains(filter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Apply view-only sorting (doesn't modify _allSnippets)
+        snippets = _currentSortMode switch
+        {
+            SnippetSortMode.Title => _sortAscending
+                ? snippets.OrderBy(x => x.Title)
+                : snippets.OrderByDescending(x => x.Title),
+            SnippetSortMode.DateCreated => _sortAscending
+                ? snippets.OrderBy(x => x.CreatedAt)
+                : snippets.OrderByDescending(x => x.CreatedAt),
+            _ => snippets.OrderBy(x => x.Order) // Custom order
+        };
+
+        SnippetsList.ItemsSource = snippets.ToList();
     }
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -468,7 +542,7 @@ public partial class MainWindow : Window
             var result = MessageBox.Show(
                 $"Delete snippet \"{snippet.Title}\"?",
                 "Confirm Delete",
-                MessageBoxButton.OK,
+                MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 
             if (result == MessageBoxResult.Yes)
@@ -480,27 +554,279 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void Snippet_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    private async void SnippetsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if (e.ClickCount == 2 && sender is Border border && border.Tag is Snippet snippet)
+        if (SnippetsList.SelectedItem is Snippet snippet)
         {
-            await InsertSnippetIntoClaudeInput(snippet.Content);
+            // Insert into text input if it was the last focused element, otherwise into browser
+            if (_lastFocusWasMessageInput)
+            {
+                InsertIntoMessageInput(snippet.Content);
+            }
+            else
+            {
+                await InsertSnippetIntoClaudeInput(snippet.Content);
+            }
         }
     }
+
+    private void InsertIntoMessageInput(string text)
+    {
+        var caretIndex = MessageInput.CaretIndex;
+        MessageInput.Text = MessageInput.Text.Insert(caretIndex, text);
+        MessageInput.CaretIndex = caretIndex + text.Length;
+        MessageInput.Focus();
+    }
+
+    private void SortSnippets_Click(object sender, RoutedEventArgs e)
+    {
+        var contextMenu = new ContextMenu
+        {
+            Background = (System.Windows.Media.Brush)FindResource("SurfaceBrush"),
+            BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
+            Foreground = (System.Windows.Media.Brush)FindResource("TextBrush")
+        };
+
+        var sortByTitleItem = new MenuItem
+        {
+            Header = "Sort by Title" + (_currentSortMode == SnippetSortMode.Title ? (_sortAscending ? " ▲" : " ▼") : "")
+        };
+        sortByTitleItem.Click += (s, args) =>
+        {
+            if (_currentSortMode == SnippetSortMode.Title)
+                _sortAscending = !_sortAscending;
+            else
+            {
+                _currentSortMode = SnippetSortMode.Title;
+                _sortAscending = true;
+            }
+            RefreshSnippetsList(SearchBox.Text);
+        };
+        contextMenu.Items.Add(sortByTitleItem);
+
+        var sortByDateItem = new MenuItem
+        {
+            Header = "Sort by Date Created" + (_currentSortMode == SnippetSortMode.DateCreated ? (_sortAscending ? " ▲" : " ▼") : "")
+        };
+        sortByDateItem.Click += (s, args) =>
+        {
+            if (_currentSortMode == SnippetSortMode.DateCreated)
+                _sortAscending = !_sortAscending;
+            else
+            {
+                _currentSortMode = SnippetSortMode.DateCreated;
+                _sortAscending = true;
+            }
+            RefreshSnippetsList(SearchBox.Text);
+        };
+        contextMenu.Items.Add(sortByDateItem);
+
+        var sortByOrderItem = new MenuItem
+        {
+            Header = "Sort by Custom Order" + (_currentSortMode == SnippetSortMode.Custom ? " ✓" : "")
+        };
+        sortByOrderItem.Click += (s, args) =>
+        {
+            _currentSortMode = SnippetSortMode.Custom;
+            RefreshSnippetsList(SearchBox.Text);
+        };
+        contextMenu.Items.Add(sortByOrderItem);
+
+        contextMenu.IsOpen = true;
+    }
+
+    private void UpdateSnippetOrders()
+    {
+        for (int i = 0; i < _allSnippets.Count; i++)
+        {
+            _allSnippets[i].Order = i;
+        }
+        _snippetService.Save(_allSnippets);
+    }
+
+    #region Drag and Drop
+
+    private void SnippetsList_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _dragStartPoint = e.GetPosition(null);
+    }
+
+    private void SnippetsList_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed) return;
+
+        var currentPos = e.GetPosition(null);
+        var diff = _dragStartPoint - currentPos;
+
+        if (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
+            Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance)
+        {
+            var listView = sender as ListView;
+            var listViewItem = FindAncestor<ListViewItem>((DependencyObject)e.OriginalSource);
+
+            if (listViewItem == null) return;
+
+            var snippet = (Snippet)listView!.ItemContainerGenerator.ItemFromContainer(listViewItem);
+            if (snippet == null) return;
+
+            var dragData = new DataObject("Snippet", snippet);
+            DragDrop.DoDragDrop(listViewItem, dragData, DragDropEffects.Move);
+        }
+    }
+
+    private void SnippetsList_DragEnter(object sender, DragEventArgs e)
+    {
+        if (!e.Data.GetDataPresent("Snippet"))
+        {
+            e.Effects = DragDropEffects.None;
+        }
+    }
+
+    private void SnippetsList_Drop(object sender, DragEventArgs e)
+    {
+        if (!e.Data.GetDataPresent("Snippet")) return;
+
+        var droppedSnippet = (Snippet)e.Data.GetData("Snippet");
+        var target = FindAncestor<ListViewItem>((DependencyObject)e.OriginalSource);
+
+        if (target == null) return;
+
+        var targetSnippet = (Snippet)SnippetsList.ItemContainerGenerator.ItemFromContainer(target);
+        if (targetSnippet == null || droppedSnippet == targetSnippet) return;
+
+        var oldIndex = _allSnippets.IndexOf(droppedSnippet);
+        var newIndex = _allSnippets.IndexOf(targetSnippet);
+
+        _allSnippets.RemoveAt(oldIndex);
+        _allSnippets.Insert(newIndex, droppedSnippet);
+
+        UpdateSnippetOrders();
+        RefreshSnippetsList(SearchBox.Text);
+    }
+
+    private static T? FindAncestor<T>(DependencyObject current) where T : DependencyObject
+    {
+        while (current != null)
+        {
+            if (current is T t)
+            {
+                return t;
+            }
+            current = System.Windows.Media.VisualTreeHelper.GetParent(current);
+        }
+        return null;
+    }
+
+    #endregion
 
     private async Task InsertSnippetIntoClaudeInput(string text)
     {
         if (ClaudeWebView.CoreWebView2 == null) return;
 
-        var escapedText = text
-            .Replace("\\", "\\\\")
-            .Replace("'", "\\'")
-            .Replace("\n", "\\n")
-            .Replace("\r", "\\r")
-            .Replace("\t", "\\t");
+        // Use the Windows clipboard to paste text - this is the most reliable method for ProseMirror
+        // Save current clipboard content
+        string? previousClipboard = null;
+        try
+        {
+            if (System.Windows.Clipboard.ContainsText())
+            {
+                previousClipboard = System.Windows.Clipboard.GetText();
+            }
+        }
+        catch { /* Ignore clipboard errors */ }
 
-        var script = $"window.insertSnippetText('{escapedText}');";
+        // Set our text to clipboard
+        try
+        {
+            System.Windows.Clipboard.SetText(text);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to set clipboard: {ex.Message}");
+            return;
+        }
+
+        // Focus the input and trigger paste via JavaScript
+        var script = @"
+            (function() {
+                // Find Claude's input
+                const selectors = [
+                    'div.ProseMirror[contenteditable=""true""]',
+                    '[contenteditable=""true""].ProseMirror',
+                    'div[contenteditable=""true""][data-placeholder]',
+                    'div[contenteditable=""true""]'
+                ];
+
+                let input = null;
+                for (const sel of selectors) {
+                    input = document.querySelector(sel);
+                    if (input) break;
+                }
+
+                if (!input) {
+                    console.error('DS Claude Client: No input element found');
+                    return false;
+                }
+
+                input.focus();
+
+                // Move cursor to end
+                const sel = window.getSelection();
+                const range = document.createRange();
+                range.selectNodeContents(input);
+                range.collapse(false);
+                sel.removeAllRanges();
+                sel.addRange(range);
+
+                console.log('DS Claude Client: Input focused, ready for paste');
+                return true;
+            })();
+        ";
+
         await ClaudeWebView.CoreWebView2.ExecuteScriptAsync(script);
+
+        // Small delay to ensure focus is established
+        await Task.Delay(50);
+
+        // Simulate Ctrl+V paste using SendKeys
+        // First, send focus to WebView
+        ClaudeWebView.Focus();
+        await Task.Delay(20);
+
+        // Use SendInput to send Ctrl+V
+        SendCtrlV();
+
+        // Small delay then restore clipboard
+        await Task.Delay(100);
+
+        // Restore previous clipboard content
+        if (previousClipboard != null)
+        {
+            try
+            {
+                System.Windows.Clipboard.SetText(previousClipboard);
+            }
+            catch { /* Ignore clipboard restore errors */ }
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+
+    private const byte VK_CONTROL = 0x11;
+    private const byte VK_V = 0x56;
+    private const uint KEYEVENTF_KEYUP = 0x0002;
+
+    private void SendCtrlV()
+    {
+        // Press Ctrl
+        keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
+        // Press V
+        keybd_event(VK_V, 0, 0, UIntPtr.Zero);
+        // Release V
+        keybd_event(VK_V, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        // Release Ctrl
+        keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
     }
 
     private void ImportSnippets_Click(object sender, RoutedEventArgs e)
@@ -555,7 +881,20 @@ public partial class MainWindow : Window
 
     #region Message Input
 
-    private async void MessageInput_KeyDown(object sender, KeyEventArgs e)
+    private void ShowHistory_Click(object sender, RoutedEventArgs e)
+    {
+        if (_messageHistory.Count == 0)
+        {
+            MessageBox.Show("No message history yet.", "History", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new HistoryDialog(_messageHistory);
+        dialog.Owner = this;
+        dialog.ShowDialog();
+    }
+
+    private async void MessageInput_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         // Shift+Enter or Ctrl+Enter to send
         if (e.Key == Key.Enter &&
@@ -577,6 +916,12 @@ public partial class MainWindow : Window
         var message = MessageInput.Text?.Trim();
         if (string.IsNullOrEmpty(message)) return;
 
+        // Add to history (avoid duplicates of the last message)
+        if (_messageHistory.Count == 0 || _messageHistory[^1] != message)
+        {
+            _messageHistory.Add(message);
+        }
+
         // Insert text into Claude's input and submit
         await InsertSnippetIntoClaudeInput(message);
 
@@ -592,7 +937,51 @@ public partial class MainWindow : Window
     {
         if (ClaudeWebView.CoreWebView2 == null) return;
 
-        await ClaudeWebView.CoreWebView2.ExecuteScriptAsync("window.clickSendButton();");
+        // Self-contained script to find and click Claude's send button
+        var script = @"
+            (function() {
+                // Try multiple selectors for the send button
+                const selectors = [
+                    'button[aria-label=""Send message""]',
+                    'button[aria-label=""Send Message""]',
+                    'button[aria-label*=""Send""]',
+                    'button[data-testid=""send-button""]',
+                    'button[data-testid*=""send""]'
+                ];
+
+                for (const sel of selectors) {
+                    const btns = document.querySelectorAll(sel);
+                    for (const btn of btns) {
+                        if (btn && !btn.disabled) {
+                            btn.click();
+                            console.log('DS Claude Client: Send button clicked via', sel);
+                            return true;
+                        }
+                    }
+                }
+
+                // Fallback: find button with SVG near the input
+                const input = document.querySelector('div.ProseMirror[contenteditable=""true""], div[contenteditable=""true""]');
+                if (input) {
+                    const container = input.closest('fieldset') || input.closest('form') || input.parentElement?.parentElement?.parentElement;
+                    if (container) {
+                        const buttons = container.querySelectorAll('button:not([disabled])');
+                        for (const btn of buttons) {
+                            if (btn.querySelector('svg')) {
+                                btn.click();
+                                console.log('DS Claude Client: Send button clicked via container fallback');
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                console.error('DS Claude Client: Could not find send button');
+                return false;
+            })();
+        ";
+
+        await ClaudeWebView.CoreWebView2.ExecuteScriptAsync(script);
     }
 
     #endregion
@@ -621,7 +1010,7 @@ public partial class MainWindow : Window
 
     private void ApplyTextAreaWidth(int width)
     {
-        TextAreaGrid.MaxWidth = width * 2;
+        TextAreaColumn.MaxWidth = width + 100; // +100 for send button
         TextAreaGrid.ColumnDefinitions[0].MinWidth = width;
     }
 
@@ -644,6 +1033,12 @@ public partial class MainWindow : Window
         // Get current text area height from the row definition
         var textAreaHeight = TextAreaRow.Height.Value;
 
+        // Get current snippets panel width (if visible)
+        if (_isSnippetsPanelVisible && SnippetsPanelColumn.Width.Value > 0)
+        {
+            _currentSnippetsPanelWidth = SnippetsPanelColumn.Width.Value;
+        }
+
         var settings = new AppSettings
         {
             FontSize = _currentFontSize,
@@ -654,6 +1049,7 @@ public partial class MainWindow : Window
             TextAreaHeight = textAreaHeight,
             AlwaysOnTop = Topmost,
             SnippetsPanelVisible = _isSnippetsPanelVisible,
+            SnippetsPanelWidth = _currentSnippetsPanelWidth,
             WindowWidth = restoreBounds.Width,
             WindowHeight = restoreBounds.Height,
             WindowLeft = restoreBounds.Left,

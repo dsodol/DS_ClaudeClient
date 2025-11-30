@@ -26,6 +26,8 @@
             <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextColor}"/>
             <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}"/>
             <SolidColorBrush x:Key="InputBackgroundBrush" Color="{StaticResource InputBackgroundColor}"/>
+            <SolidColorBrush x:Key="HoverBrush" Color="#E8E8E8"/>
+            <SolidColorBrush x:Key="AccentBrush" Color="#FDE68A"/>
 
             <!-- Button Style -->
             <Style x:Key="IconButtonStyle" TargetType="Button">

@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet publish:*)",
+      "Bash(dotnet tool list:*)",
+      "Bash(dotnet tool install:*)",
+      "Bash(wix build:*)",
+      "Bash(gh release create v1.0.0 \"./installer/DS_ClaudeClient-v1.0.0-x64.msi\" --title \"DS Claude Client v1.0.0\" --notes \"$(cat <<''EOF''\n## DS Claude Client v1.0.0\n\nA custom Windows desktop client for Claude AI with enhanced features.\n\n### Features\n- Embedded Claude.ai via WebView2\n- Enhanced text input area with Shift+Enter/Ctrl+Enter to send\n- Message history dialog with copy to clipboard\n- Resizable snippets panel with search, sort, drag-drop reorder\n- Import/export snippets as JSON\n- Configurable fonts (including JetBrains Mono, Cascadia Code)\n- Always on top toggle\n- Settings persistence (window size, position, fonts, panels)\n\n### Installation\n1. Download `DS_ClaudeClient-v1.0.0-x64.msi`\n2. Run the installer\n3. Launch from Start Menu or Desktop shortcut\n\n### Requirements\n- Windows 10 version 1809 or later\n- WebView2 Runtime (usually pre-installed on Windows 10/11)\nEOF\n)\")",
+      "Bash(where:*)",
+      "Bash(winget install:*)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" auth status)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" release create v1.0.0 \"./installer/DS_ClaudeClient-v1.0.0-x64.msi\" --title \"DS Claude Client v1.0.0\" --notes \"$(cat <<''EOF''\n## DS Claude Client v1.0.0\n\nA custom Windows desktop client for Claude AI with enhanced features.\n\n### Features\n- Embedded Claude.ai via WebView2\n- Enhanced text input area with Shift+Enter/Ctrl+Enter to send\n- Message history dialog with copy to clipboard\n- Resizable snippets panel with search, sort, drag-drop reorder\n- Import/export snippets as JSON\n- Configurable fonts (including JetBrains Mono, Cascadia Code)\n- Always on top toggle\n- Settings persistence (window size, position, fonts, panels)\n\n### Installation\n1. Download `DS_ClaudeClient-v1.0.0-x64.msi`\n2. Run the installer\n3. Launch from Start Menu or Desktop shortcut\n\n### Requirements\n- Windows 10 version 1809 or later\n- WebView2 Runtime (usually pre-installed on Windows 10/11)\nEOF\n)\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

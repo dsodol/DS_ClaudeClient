@@ -903,6 +903,16 @@ public partial class MainWindow : Window
         {
             await SendMessage();
             e.Handled = true;
+            return;
+        }
+
+        // Handle Tab key - insert 2 spaces instead of default tab
+        if (e.Key == Key.Tab && Keyboard.Modifiers == ModifierKeys.None)
+        {
+            var caretIndex = MessageInput.CaretIndex;
+            MessageInput.Text = MessageInput.Text.Insert(caretIndex, "  ");
+            MessageInput.CaretIndex = caretIndex + 2;
+            e.Handled = true;
         }
     }
 

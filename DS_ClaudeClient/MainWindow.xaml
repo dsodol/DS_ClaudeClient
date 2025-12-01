@@ -45,13 +45,20 @@
                     </Button>
 
                     <!-- Title -->
-                    <TextBlock Grid.Column="1"
-                               Text="DS Claude Client"
-                               Foreground="{StaticResource TextBrush}"
-                               FontWeight="SemiBold"
-                               VerticalAlignment="Center"
-                               HorizontalAlignment="Center"
-                               FontSize="13"/>
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+                        <TextBlock Text="DS Claude Client"
+                                   Foreground="{StaticResource TextBrush}"
+                                   FontWeight="SemiBold"
+                                   FontSize="13"/>
+                        <TextBlock x:Name="VersionText"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="11"
+                                   Margin="8,0,0,0"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
 
                     <!-- Window Controls -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,4,0"
@@ -119,28 +126,30 @@
                                   Grid.Row="0"/>
 
                     <!-- Resizable Splitter -->
-                    <GridSplitter Grid.Row="1"
+                    <GridSplitter x:Name="TextAreaSplitter"
+                                  Grid.Row="1"
                                   Height="3"
                                   HorizontalAlignment="Stretch"
                                   Background="{StaticResource BorderBrush}"
                                   Cursor="SizeNS"/>
 
                     <!-- Native Text Input Area -->
-                    <Border Grid.Row="2"
+                    <Border x:Name="TextAreaBorder"
+                            Grid.Row="2"
                             Background="{StaticResource SurfaceBrush}"
                             BorderBrush="{StaticResource BorderBrush}"
                             BorderThickness="0,1,0,0"
                             Padding="12,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition x:Name="TextAreaLeftMargin" Width="0"/>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition x:Name="TextAreaColumn" Width="Auto" MaxWidth="1600"/>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition x:Name="TextAreaRightMargin" Width="0"/>
                             </Grid.ColumnDefinitions>
 
                             <Grid x:Name="TextAreaGrid" Grid.Column="1">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" MinWidth="800"/>
+                                    <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
@@ -150,6 +159,7 @@
                                          AcceptsTab="True"
                                          TextWrapping="Wrap"
                                          VerticalScrollBarVisibility="Auto"
+                                         HorizontalScrollBarVisibility="Disabled"
                                          Margin="0,0,10,0"
                                          PreviewKeyDown="MessageInput_PreviewKeyDown"
                                          Style="{StaticResource MessageInputStyle}"/>
@@ -157,6 +167,20 @@
                                 <StackPanel Grid.Column="1"
                                             VerticalAlignment="Bottom"
                                             Orientation="Vertical">
+                                    <Button x:Name="ToggleTextAreaWidthButton"
+                                            Style="{StaticResource IconButtonStyle}"
+                                            Click="ToggleTextAreaWidth_Click"
+                                            ToolTip="Reduce text area width"
+                                            Margin="0,0,0,6">
+                                        <TextBlock x:Name="ToggleWidthIcon" Text="&#x2194;" FontSize="14"/>
+                                    </Button>
+                                    <Button x:Name="CollapseTextAreaButton"
+                                            Style="{StaticResource IconButtonStyle}"
+                                            Click="CollapseTextArea_Click"
+                                            ToolTip="Collapse text area"
+                                            Margin="0,0,0,6">
+                                        <TextBlock x:Name="CollapseTextAreaIcon" Text="&#x25BC;" FontSize="10"/>
+                                    </Button>
                                     <Button Content="Send"
                                             Click="SendButton_Click"
                                             Style="{StaticResource SendButtonStyle}"
@@ -164,6 +188,32 @@
                                             ToolTip="Send message (Shift+Enter or Ctrl+Enter)"/>
                                 </StackPanel>
                             </Grid>
+                        </Grid>
+                    </Border>
+
+                    <!-- Collapsed Text Area Bar -->
+                    <Border x:Name="CollapsedTextAreaBar"
+                            Grid.Row="2"
+                            Background="{StaticResource SurfaceBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="0,1,0,0"
+                            Visibility="Collapsed"
+                            Height="32"
+                            Cursor="Hand"
+                            MouseLeftButtonDown="CollapsedTextAreaBar_Click">
+                        <Grid>
+                            <TextBlock Text="Click to expand text input area"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontSize="12"/>
+                            <Button Style="{StaticResource IconButtonStyle}"
+                                    Click="ExpandTextArea_Click"
+                                    HorizontalAlignment="Right"
+                                    Margin="0,0,12,0"
+                                    ToolTip="Expand text area">
+                                <TextBlock Text="&#x25B2;" FontSize="10"/>
+                            </Button>
                         </Grid>
                     </Border>
                 </Grid>

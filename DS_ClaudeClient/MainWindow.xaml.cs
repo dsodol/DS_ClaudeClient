@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -29,6 +30,10 @@ public partial class MainWindow : Window
     private bool _lastFocusWasMessageInput = false;
     private double _currentSnippetsPanelWidth = 280;
     private readonly List<string> _messageHistory = new();
+    private SendKeyMode _currentSendKeyMode = SendKeyMode.ShiftEnter;
+    private bool _isTextAreaCollapsed = false;
+    private bool _isTextAreaWidthMaximized = true;
+    private double _savedTextAreaHeight = 100;
 
     public MainWindow()
     {
@@ -37,6 +42,9 @@ public partial class MainWindow : Window
         {
             InitializeComponent();
             App.Log("InitializeComponent completed");
+
+            // Display version in title bar
+            DisplayVersion();
 
             _snippetService = new SnippetService();
             _settingsService = new SettingsService();
@@ -66,11 +74,13 @@ public partial class MainWindow : Window
             _currentTextAreaFontFamily = settings.TextAreaFontFamily;
             _currentTextAreaFontSize = settings.TextAreaFontSize;
             _currentTextAreaHeight = settings.TextAreaHeight;
+            _currentSendKeyMode = settings.SendKeyMode;
             Topmost = settings.AlwaysOnTop;
             UpdateTopmostButton();
             ApplyTextAreaWidth(_currentTextAreaWidth);
             ApplyTextAreaFont(_currentTextAreaFontFamily, _currentTextAreaFontSize);
             ApplyTextAreaHeight(_currentTextAreaHeight);
+            UpdateSendButtonTooltip();
 
             // Restore window position and size
             if (settings.WindowWidth > 0 && settings.WindowHeight > 0)
@@ -331,6 +341,25 @@ public partial class MainWindow : Window
         ";
 
         await ClaudeWebView.CoreWebView2.ExecuteScriptAsync(script);
+    }
+
+    private void DisplayVersion()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        var version = assembly.GetName().Version;
+        var infoVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
+        // Use informational version if available (includes build number), otherwise use assembly version
+        var displayVersion = infoVersion ?? version?.ToString() ?? "1.0.0";
+
+        // Remove git hash suffix if present (after the +)
+        var plusIndex = displayVersion.IndexOf('+');
+        if (plusIndex > 0)
+        {
+            displayVersion = displayVersion.Substring(0, plusIndex);
+        }
+
+        VersionText.Text = $"v{displayVersion}";
     }
 
     #region Title Bar Events
@@ -896,14 +925,23 @@ public partial class MainWindow : Window
 
     private async void MessageInput_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        // Shift+Enter or Ctrl+Enter to send
-        if (e.Key == Key.Enter &&
-            ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift ||
-             (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control))
+        // Check for send key based on current mode
+        if (e.Key == Key.Enter)
         {
-            await SendMessage();
-            e.Handled = true;
-            return;
+            bool shouldSend = _currentSendKeyMode switch
+            {
+                SendKeyMode.ShiftEnter => (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift,
+                SendKeyMode.CtrlEnter => (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control,
+                SendKeyMode.Enter => Keyboard.Modifiers == ModifierKeys.None,
+                _ => false
+            };
+
+            if (shouldSend)
+            {
+                await SendMessage();
+                e.Handled = true;
+                return;
+            }
         }
 
         // Handle Tab key - insert 2 spaces instead of default tab
@@ -1001,7 +1039,7 @@ public partial class MainWindow : Window
     private void OptionsButton_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new OptionsDialog(_currentFontSize, _currentFontFamily, _currentTextAreaWidth,
-            _currentTextAreaFontFamily, _currentTextAreaFontSize);
+            _currentTextAreaFontFamily, _currentTextAreaFontSize, _currentSendKeyMode);
         dialog.Owner = this;
 
         if (dialog.ShowDialog() == true)
@@ -1011,17 +1049,41 @@ public partial class MainWindow : Window
             _currentTextAreaWidth = dialog.TextAreaWidth;
             _currentTextAreaFontFamily = dialog.TextAreaFontFamily;
             _currentTextAreaFontSize = dialog.TextAreaFontSize;
+            _currentSendKeyMode = dialog.SendKeyMode;
             ApplyFontSize(_currentFontSize);
             ApplyTextAreaWidth(_currentTextAreaWidth);
             ApplyTextAreaFont(_currentTextAreaFontFamily, _currentTextAreaFontSize);
+            UpdateSendButtonTooltip();
             SaveSettings();
+        }
+    }
+
+    private void UpdateSendButtonTooltip()
+    {
+        var shortcut = _currentSendKeyMode switch
+        {
+            SendKeyMode.ShiftEnter => "Shift+Enter",
+            SendKeyMode.CtrlEnter => "Ctrl+Enter",
+            SendKeyMode.Enter => "Enter",
+            _ => "Shift+Enter"
+        };
+        // Find the send button and update its tooltip
+        var sendButton = TextAreaGrid.Children.OfType<StackPanel>()
+            .SelectMany(sp => sp.Children.OfType<Button>())
+            .FirstOrDefault(b => b.Content?.ToString() == "Send");
+        if (sendButton != null)
+        {
+            sendButton.ToolTip = $"Send message ({shortcut})";
         }
     }
 
     private void ApplyTextAreaWidth(int width)
     {
-        TextAreaColumn.MaxWidth = width + 100; // +100 for send button
-        TextAreaGrid.ColumnDefinitions[0].MinWidth = width;
+        _currentTextAreaWidth = width;
+        if (!_isTextAreaWidthMaximized)
+        {
+            ApplyTextAreaWidthMode();
+        }
     }
 
     private void ApplyTextAreaFont(string fontFamily, int fontSize)
@@ -1033,6 +1095,91 @@ public partial class MainWindow : Window
     private void ApplyTextAreaHeight(double height)
     {
         TextAreaRow.Height = new GridLength(height);
+    }
+
+    #endregion
+
+    #region Text Area Collapse/Expand
+
+    private void CollapseTextArea_Click(object sender, RoutedEventArgs e)
+    {
+        CollapseTextArea();
+    }
+
+    private void ExpandTextArea_Click(object sender, RoutedEventArgs e)
+    {
+        ExpandTextArea();
+    }
+
+    private void CollapsedTextAreaBar_Click(object sender, MouseButtonEventArgs e)
+    {
+        ExpandTextArea();
+    }
+
+    private void CollapseTextArea()
+    {
+        if (_isTextAreaCollapsed) return;
+
+        // Save current height before collapsing
+        _savedTextAreaHeight = TextAreaRow.Height.Value;
+
+        // Hide the text area and splitter, show collapsed bar
+        TextAreaBorder.Visibility = Visibility.Collapsed;
+        TextAreaSplitter.Visibility = Visibility.Collapsed;
+        CollapsedTextAreaBar.Visibility = Visibility.Visible;
+
+        // Set row to auto-size for the collapsed bar
+        TextAreaRow.Height = new GridLength(32);
+        TextAreaRow.MinHeight = 32;
+        TextAreaRow.MaxHeight = 32;
+
+        _isTextAreaCollapsed = true;
+    }
+
+    private void ExpandTextArea()
+    {
+        if (!_isTextAreaCollapsed) return;
+
+        // Show the text area and splitter, hide collapsed bar
+        TextAreaBorder.Visibility = Visibility.Visible;
+        TextAreaSplitter.Visibility = Visibility.Visible;
+        CollapsedTextAreaBar.Visibility = Visibility.Collapsed;
+
+        // Restore height constraints and value
+        TextAreaRow.MinHeight = 60;
+        TextAreaRow.MaxHeight = 400;
+        TextAreaRow.Height = new GridLength(_savedTextAreaHeight);
+
+        _isTextAreaCollapsed = false;
+
+        // Focus the message input
+        MessageInput.Focus();
+    }
+
+    private void ToggleTextAreaWidth_Click(object sender, RoutedEventArgs e)
+    {
+        _isTextAreaWidthMaximized = !_isTextAreaWidthMaximized;
+        ApplyTextAreaWidthMode();
+    }
+
+    private void ApplyTextAreaWidthMode()
+    {
+        if (_isTextAreaWidthMaximized)
+        {
+            // Full width: no margins, content fills available space
+            TextAreaLeftMargin.Width = new GridLength(0);
+            TextAreaRightMargin.Width = new GridLength(0);
+            TextAreaGrid.MaxWidth = double.PositiveInfinity;
+            ToggleTextAreaWidthButton.ToolTip = "Reduce text area width";
+        }
+        else
+        {
+            // Centered with configured width: use star margins to center, limit content width
+            TextAreaLeftMargin.Width = new GridLength(1, GridUnitType.Star);
+            TextAreaRightMargin.Width = new GridLength(1, GridUnitType.Star);
+            TextAreaGrid.MaxWidth = _currentTextAreaWidth;
+            ToggleTextAreaWidthButton.ToolTip = "Maximize text area width";
+        }
     }
 
     private void SaveSettings()
@@ -1051,6 +1198,7 @@ public partial class MainWindow : Window
 
         var settings = new AppSettings
         {
+            SendKeyMode = _currentSendKeyMode,
             FontSize = _currentFontSize,
             FontFamily = _currentFontFamily,
             TextAreaWidth = _currentTextAreaWidth,

@@ -1,7 +1,15 @@
 namespace DS_ClaudeClient.Models;
 
+public enum SendKeyMode
+{
+    ShiftEnter,
+    CtrlEnter,
+    Enter
+}
+
 public class AppSettings
 {
+    public SendKeyMode SendKeyMode { get; set; } = SendKeyMode.ShiftEnter;
     public int FontSize { get; set; } = 14;
     public string FontFamily { get; set; } = "Segoe UI";
     public bool AlwaysOnTop { get; set; } = false;

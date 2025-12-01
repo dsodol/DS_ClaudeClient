@@ -8,10 +8,13 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>DS_ClaudeClient</AssemblyName>
     <RootNamespace>DS_ClaudeClient</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Authors>DS_ClaudeClient</Authors>
     <Description>A custom Windows desktop client for Claude AI with enhanced features</Description>
     <ApplicationIcon>Resources\app.ico</ApplicationIcon>
+    <!-- Auto-increment build number based on date/time -->
+    <BuildNumber>$([System.DateTime]::Now.ToString("yyMMdd.HHmm"))</BuildNumber>
+    <InformationalVersion>$(Version).$(BuildNumber)</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>

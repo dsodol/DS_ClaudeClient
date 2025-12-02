@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Options"
-        Height="580" Width="400"
+        Height="720" Width="450"
         WindowStartupLocation="CenterOwner"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -42,7 +42,8 @@
             </Border>
 
             <!-- Content -->
-            <StackPanel Grid.Row="1" Margin="20,20,20,10">
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20,20,20,10">
                 <!-- Font Family -->
                 <TextBlock Text="Font Family"
                            Foreground="{StaticResource TextBrush}"
@@ -72,30 +73,6 @@
                     <TextBlock x:Name="FontSizeLabel"
                                Grid.Column="1"
                                Text="14px"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               VerticalAlignment="Center"
-                               HorizontalAlignment="Right"/>
-                </Grid>
-
-                <!-- Text Area Width -->
-                <TextBlock Text="Text Area Width"
-                           Foreground="{StaticResource TextBrush}"
-                           FontWeight="SemiBold"
-                           Margin="0,16,0,8"/>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="50"/>
-                    </Grid.ColumnDefinitions>
-                    <Slider x:Name="TextAreaWidthSlider"
-                            Minimum="400" Maximum="1600"
-                            Value="800"
-                            TickFrequency="100"
-                            IsSnapToTickEnabled="True"
-                            ValueChanged="TextAreaWidthSlider_ValueChanged"/>
-                    <TextBlock x:Name="TextAreaWidthLabel"
-                               Grid.Column="1"
-                               Text="800px"
                                Foreground="{StaticResource TextSecondaryBrush}"
                                VerticalAlignment="Center"
                                HorizontalAlignment="Right"/>
@@ -143,7 +120,43 @@
                 <ComboBox x:Name="SendKeyComboBox"
                           SelectionChanged="SendKeyComboBox_SelectionChanged"
                           Padding="8,6"/>
+
+                <!-- Snippets Storage Location -->
+                <TextBlock Text="Snippets Storage Location"
+                           Foreground="{StaticResource TextBrush}"
+                           FontWeight="SemiBold"
+                           Margin="0,16,0,8"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="SnippetsFilePathTextBox"
+                             Grid.Column="0"
+                             Padding="8,6"
+                             VerticalAlignment="Center"
+                             Style="{StaticResource SearchTextBoxStyle}"/>
+                    <Button Grid.Column="1"
+                            Content="Browse..."
+                            Style="{StaticResource DialogButtonStyle}"
+                            Click="BrowseSnippetsPath_Click"
+                            Margin="8,0,0,0"
+                            Padding="12,6"/>
+                </Grid>
+                <TextBlock Text="Default: OneDrive\ds_snippets.json"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="11"
+                           Margin="0,4,0,0"/>
+
+                <!-- Show Log Button -->
+                <Button Content="Show Snippets Log"
+                        Style="{StaticResource DialogButtonStyle}"
+                        Click="ShowLogButton_Click"
+                        HorizontalAlignment="Left"
+                        Margin="0,16,0,0"
+                        Padding="12,8"/>
             </StackPanel>
+            </ScrollViewer>
 
             <!-- Buttons -->
             <StackPanel Grid.Row="2"

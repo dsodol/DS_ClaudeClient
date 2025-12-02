@@ -24,4 +24,5 @@ public class AppSettings
     public string TextAreaFontFamily { get; set; } = "Segoe UI";
     public int TextAreaFontSize { get; set; } = 14;
     public double TextAreaHeight { get; set; } = 100;
+    public string SnippetsFilePath { get; set; } = "";
 }

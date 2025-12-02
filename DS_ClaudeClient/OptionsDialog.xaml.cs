@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using DS_ClaudeClient.Models;
+using DS_ClaudeClient.Services;
 
 namespace DS_ClaudeClient;
 
@@ -9,10 +10,13 @@ public partial class OptionsDialog : Window
 {
     public new int FontSize { get; private set; }
     public string SelectedFontFamily { get; private set; }
-    public int TextAreaWidth { get; private set; }
     public string TextAreaFontFamily { get; private set; }
     public int TextAreaFontSize { get; private set; }
     public SendKeyMode SendKeyMode { get; private set; }
+    public string SnippetsFilePath { get; private set; }
+
+    private readonly SnippetService? _snippetService;
+    private readonly List<Snippet>? _snippets;
 
     private static readonly (SendKeyMode Mode, string Display)[] SendKeyOptions = new[]
     {
@@ -54,23 +58,27 @@ public partial class OptionsDialog : Window
         "Menlo"
     };
 
-    public OptionsDialog(int currentFontSize, string currentFontFamily, int currentTextAreaWidth,
-        string currentTextAreaFontFamily, int currentTextAreaFontSize, SendKeyMode currentSendKeyMode)
+    public OptionsDialog(int currentFontSize, string currentFontFamily,
+        string currentTextAreaFontFamily, int currentTextAreaFontSize, SendKeyMode currentSendKeyMode,
+        string currentSnippetsFilePath = "", SnippetService? snippetService = null, List<Snippet>? snippets = null)
     {
         InitializeComponent();
+        _snippetService = snippetService;
+        _snippets = snippets;
         FontSize = currentFontSize;
         SelectedFontFamily = currentFontFamily;
-        TextAreaWidth = currentTextAreaWidth;
         TextAreaFontFamily = currentTextAreaFontFamily;
         TextAreaFontSize = currentTextAreaFontSize;
         SendKeyMode = currentSendKeyMode;
+        SnippetsFilePath = string.IsNullOrWhiteSpace(currentSnippetsFilePath)
+            ? SnippetService.GetDefaultFilePath()
+            : currentSnippetsFilePath;
 
         FontSizeSlider.Value = currentFontSize;
         FontSizeLabel.Text = $"{currentFontSize}px";
-        TextAreaWidthSlider.Value = currentTextAreaWidth;
-        TextAreaWidthLabel.Text = $"{currentTextAreaWidth}px";
         TextAreaFontSizeSlider.Value = currentTextAreaFontSize;
         TextAreaFontSizeLabel.Text = $"{currentTextAreaFontSize}px";
+        SnippetsFilePathTextBox.Text = SnippetsFilePath;
 
         // Populate font family combo box
         foreach (var font in CommonFonts)
@@ -122,12 +130,6 @@ public partial class OptionsDialog : Window
         FontSizeLabel.Text = $"{(int)e.NewValue}px";
     }
 
-    private void TextAreaWidthSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        if (TextAreaWidthLabel == null) return;
-        TextAreaWidthLabel.Text = $"{(int)e.NewValue}px";
-    }
-
     private void TextAreaFontFamilyComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
         if (TextAreaFontFamilyComboBox.SelectedItem is string fontName)
@@ -154,15 +156,31 @@ public partial class OptionsDialog : Window
     {
         FontSize = (int)FontSizeSlider.Value;
         SelectedFontFamily = FontFamilyComboBox.SelectedItem as string ?? "Segoe UI";
-        TextAreaWidth = (int)TextAreaWidthSlider.Value;
         TextAreaFontFamily = TextAreaFontFamilyComboBox.SelectedItem as string ?? "Segoe UI";
         TextAreaFontSize = (int)TextAreaFontSizeSlider.Value;
+        SnippetsFilePath = SnippetsFilePathTextBox.Text;
         if (SendKeyComboBox.SelectedIndex >= 0 && SendKeyComboBox.SelectedIndex < SendKeyOptions.Length)
         {
             SendKeyMode = SendKeyOptions[SendKeyComboBox.SelectedIndex].Mode;
         }
         DialogResult = true;
         Close();
+    }
+
+    private void BrowseSnippetsPath_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+            Title = "Select Snippets Storage Location",
+            FileName = System.IO.Path.GetFileName(SnippetsFilePathTextBox.Text),
+            InitialDirectory = System.IO.Path.GetDirectoryName(SnippetsFilePathTextBox.Text) ?? ""
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            SnippetsFilePathTextBox.Text = dialog.FileName;
+        }
     }
 
     private void CancelButton_Click(object sender, RoutedEventArgs e)
@@ -175,5 +193,20 @@ public partial class OptionsDialog : Window
     {
         DialogResult = false;
         Close();
+    }
+
+    private void ShowLogButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_snippetService == null || _snippets == null)
+        {
+            MessageBox.Show("Snippet service not available.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var logWindow = new LogWindow(_snippetService, _snippets)
+        {
+            Owner = this
+        };
+        logWindow.ShowDialog();
     }
 }

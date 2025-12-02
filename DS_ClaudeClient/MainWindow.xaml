@@ -138,56 +138,67 @@
                             Grid.Row="2"
                             Background="{StaticResource SurfaceBrush}"
                             BorderBrush="{StaticResource BorderBrush}"
-                            BorderThickness="0,1,0,0"
-                            Padding="12,10">
+                            BorderThickness="0,1,0,0">
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition x:Name="TextAreaLeftMargin" Width="0"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition x:Name="TextAreaRightMargin" Width="0"/>
+                                <ColumnDefinition x:Name="BottomLeftColumn" Width="100" MinWidth="50"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition x:Name="BottomCenterColumn" Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition x:Name="BottomRightColumn" Width="100" MinWidth="50"/>
                             </Grid.ColumnDefinitions>
 
-                            <Grid x:Name="TextAreaGrid" Grid.Column="1">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
+                            <!-- Left section (empty/spacer) -->
+                            <Border Grid.Column="0"
+                                    Background="Transparent"/>
 
+                            <!-- Left splitter -->
+                            <GridSplitter Grid.Column="1"
+                                          Width="4"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Stretch"
+                                          Background="{StaticResource BorderBrush}"
+                                          Cursor="SizeWE"/>
+
+                            <!-- Center section (text area) -->
+                            <Grid x:Name="TextAreaGrid" Grid.Column="2" Margin="8">
                                 <TextBox x:Name="MessageInput"
-                                         Grid.Column="0"
                                          AcceptsReturn="True"
                                          AcceptsTab="True"
                                          TextWrapping="Wrap"
                                          VerticalScrollBarVisibility="Auto"
                                          HorizontalScrollBarVisibility="Disabled"
-                                         Margin="0,0,10,0"
                                          PreviewKeyDown="MessageInput_PreviewKeyDown"
                                          Style="{StaticResource MessageInputStyle}"/>
-
-                                <StackPanel Grid.Column="1"
-                                            VerticalAlignment="Bottom"
-                                            Orientation="Vertical">
-                                    <Button x:Name="ToggleTextAreaWidthButton"
-                                            Style="{StaticResource IconButtonStyle}"
-                                            Click="ToggleTextAreaWidth_Click"
-                                            ToolTip="Reduce text area width"
-                                            Margin="0,0,0,6">
-                                        <TextBlock x:Name="ToggleWidthIcon" Text="&#x2194;" FontSize="14"/>
-                                    </Button>
-                                    <Button x:Name="CollapseTextAreaButton"
-                                            Style="{StaticResource IconButtonStyle}"
-                                            Click="CollapseTextArea_Click"
-                                            ToolTip="Collapse text area"
-                                            Margin="0,0,0,6">
-                                        <TextBlock x:Name="CollapseTextAreaIcon" Text="&#x25BC;" FontSize="10"/>
-                                    </Button>
-                                    <Button Content="Send"
-                                            Click="SendButton_Click"
-                                            Style="{StaticResource SendButtonStyle}"
-                                            Padding="16,10"
-                                            ToolTip="Send message (Shift+Enter or Ctrl+Enter)"/>
-                                </StackPanel>
                             </Grid>
+
+                            <!-- Right splitter -->
+                            <GridSplitter Grid.Column="3"
+                                          Width="4"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Stretch"
+                                          Background="{StaticResource BorderBrush}"
+                                          Cursor="SizeWE"/>
+
+                            <!-- Right section (controls) -->
+                            <StackPanel Grid.Column="4"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Center"
+                                        Orientation="Vertical"
+                                        Margin="8">
+                                <Button x:Name="CollapseTextAreaButton"
+                                        Style="{StaticResource IconButtonStyle}"
+                                        Click="CollapseTextArea_Click"
+                                        ToolTip="Collapse text area"
+                                        Margin="0,0,0,8">
+                                    <TextBlock x:Name="CollapseTextAreaIcon" Text="&#x25BC;" FontSize="10"/>
+                                </Button>
+                                <Button Content="Send"
+                                        Click="SendButton_Click"
+                                        Style="{StaticResource SendButtonStyle}"
+                                        Padding="16,10"
+                                        ToolTip="Send message (Shift+Enter or Ctrl+Enter)"/>
+                            </StackPanel>
                         </Grid>
                     </Border>
 

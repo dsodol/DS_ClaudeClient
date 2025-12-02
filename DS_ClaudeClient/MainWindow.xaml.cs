@@ -20,7 +20,6 @@ public partial class MainWindow : Window
     private bool _isSnippetsPanelVisible = true;
     private int _currentFontSize = 14;
     private string _currentFontFamily = "Segoe UI";
-    private int _currentTextAreaWidth = 800;
     private string _currentTextAreaFontFamily = "Segoe UI";
     private int _currentTextAreaFontSize = 14;
     private double _currentTextAreaHeight = 100;
@@ -32,8 +31,8 @@ public partial class MainWindow : Window
     private readonly List<string> _messageHistory = new();
     private SendKeyMode _currentSendKeyMode = SendKeyMode.ShiftEnter;
     private bool _isTextAreaCollapsed = false;
-    private bool _isTextAreaWidthMaximized = true;
     private double _savedTextAreaHeight = 100;
+    private string _currentSnippetsFilePath = "";
 
     public MainWindow()
     {
@@ -70,14 +69,12 @@ public partial class MainWindow : Window
             var settings = _settingsService.Load();
             _currentFontSize = settings.FontSize;
             _currentFontFamily = settings.FontFamily;
-            _currentTextAreaWidth = settings.TextAreaWidth;
             _currentTextAreaFontFamily = settings.TextAreaFontFamily;
             _currentTextAreaFontSize = settings.TextAreaFontSize;
             _currentTextAreaHeight = settings.TextAreaHeight;
             _currentSendKeyMode = settings.SendKeyMode;
             Topmost = settings.AlwaysOnTop;
             UpdateTopmostButton();
-            ApplyTextAreaWidth(_currentTextAreaWidth);
             ApplyTextAreaFont(_currentTextAreaFontFamily, _currentTextAreaFontSize);
             ApplyTextAreaHeight(_currentTextAreaHeight);
             UpdateSendButtonTooltip();
@@ -105,10 +102,18 @@ public partial class MainWindow : Window
             _currentSnippetsPanelWidth = settings.SnippetsPanelWidth;
             UpdateSnippetsPanelVisibility();
 
+            // Apply snippets file path from settings
+            _currentSnippetsFilePath = settings.SnippetsFilePath;
+            if (!string.IsNullOrWhiteSpace(_currentSnippetsFilePath))
+            {
+                _snippetService.SetFilePath(_currentSnippetsFilePath);
+            }
+            _currentSnippetsFilePath = _snippetService.SnippetsFilePath;
+
             // Load snippets
             _allSnippets = _snippetService.Load();
             RefreshSnippetsList();
-            App.Log("Settings and snippets loaded");
+            App.Log($"Settings and snippets loaded from: {_currentSnippetsFilePath}");
 
             // Track focus - remember last focused element for snippet insertion
             MessageInput.GotFocus += (s, args) => _lastFocusWasMessageInput = true;
@@ -497,9 +502,11 @@ public partial class MainWindow : Window
 
     private void RefreshSnippetsList(string? filter = null)
     {
-        IEnumerable<Snippet> snippets = _allSnippets;
+        // Filter out empty snippets (no title and no content)
+        IEnumerable<Snippet> snippets = _allSnippets
+            .Where(s => !string.IsNullOrWhiteSpace(s.Title) || !string.IsNullOrWhiteSpace(s.Content));
 
-        // Apply filter
+        // Apply search filter
         if (!string.IsNullOrWhiteSpace(filter))
         {
             snippets = snippets.Where(s =>
@@ -1038,20 +1045,29 @@ public partial class MainWindow : Window
 
     private void OptionsButton_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OptionsDialog(_currentFontSize, _currentFontFamily, _currentTextAreaWidth,
-            _currentTextAreaFontFamily, _currentTextAreaFontSize, _currentSendKeyMode);
+        var dialog = new OptionsDialog(_currentFontSize, _currentFontFamily,
+            _currentTextAreaFontFamily, _currentTextAreaFontSize, _currentSendKeyMode, _currentSnippetsFilePath,
+            _snippetService, _allSnippets);
         dialog.Owner = this;
 
         if (dialog.ShowDialog() == true)
         {
             _currentFontSize = dialog.FontSize;
             _currentFontFamily = dialog.SelectedFontFamily;
-            _currentTextAreaWidth = dialog.TextAreaWidth;
             _currentTextAreaFontFamily = dialog.TextAreaFontFamily;
             _currentTextAreaFontSize = dialog.TextAreaFontSize;
             _currentSendKeyMode = dialog.SendKeyMode;
+
+            // Handle snippets file path change
+            if (_currentSnippetsFilePath != dialog.SnippetsFilePath)
+            {
+                _currentSnippetsFilePath = dialog.SnippetsFilePath;
+                _snippetService.SetFilePath(_currentSnippetsFilePath);
+                _allSnippets = _snippetService.Load();
+                RefreshSnippetsList();
+            }
+
             ApplyFontSize(_currentFontSize);
-            ApplyTextAreaWidth(_currentTextAreaWidth);
             ApplyTextAreaFont(_currentTextAreaFontFamily, _currentTextAreaFontSize);
             UpdateSendButtonTooltip();
             SaveSettings();
@@ -1067,22 +1083,16 @@ public partial class MainWindow : Window
             SendKeyMode.Enter => "Enter",
             _ => "Shift+Enter"
         };
-        // Find the send button and update its tooltip
-        var sendButton = TextAreaGrid.Children.OfType<StackPanel>()
-            .SelectMany(sp => sp.Children.OfType<Button>())
-            .FirstOrDefault(b => b.Content?.ToString() == "Send");
-        if (sendButton != null)
+        // Find the send button in the right panel and update its tooltip
+        var textAreaBorderGrid = TextAreaBorder.Child as Grid;
+        if (textAreaBorderGrid != null)
         {
-            sendButton.ToolTip = $"Send message ({shortcut})";
-        }
-    }
-
-    private void ApplyTextAreaWidth(int width)
-    {
-        _currentTextAreaWidth = width;
-        if (!_isTextAreaWidthMaximized)
-        {
-            ApplyTextAreaWidthMode();
+            var rightPanel = textAreaBorderGrid.Children.OfType<StackPanel>().FirstOrDefault();
+            var sendButton = rightPanel?.Children.OfType<Button>().FirstOrDefault(b => b.Content?.ToString() == "Send");
+            if (sendButton != null)
+            {
+                sendButton.ToolTip = $"Send message ({shortcut})";
+            }
         }
     }
 
@@ -1156,32 +1166,6 @@ public partial class MainWindow : Window
         MessageInput.Focus();
     }
 
-    private void ToggleTextAreaWidth_Click(object sender, RoutedEventArgs e)
-    {
-        _isTextAreaWidthMaximized = !_isTextAreaWidthMaximized;
-        ApplyTextAreaWidthMode();
-    }
-
-    private void ApplyTextAreaWidthMode()
-    {
-        if (_isTextAreaWidthMaximized)
-        {
-            // Full width: no margins, content fills available space
-            TextAreaLeftMargin.Width = new GridLength(0);
-            TextAreaRightMargin.Width = new GridLength(0);
-            TextAreaGrid.MaxWidth = double.PositiveInfinity;
-            ToggleTextAreaWidthButton.ToolTip = "Reduce text area width";
-        }
-        else
-        {
-            // Centered with configured width: use star margins to center, limit content width
-            TextAreaLeftMargin.Width = new GridLength(1, GridUnitType.Star);
-            TextAreaRightMargin.Width = new GridLength(1, GridUnitType.Star);
-            TextAreaGrid.MaxWidth = _currentTextAreaWidth;
-            ToggleTextAreaWidthButton.ToolTip = "Maximize text area width";
-        }
-    }
-
     private void SaveSettings()
     {
         // Store restore bounds when maximized
@@ -1201,13 +1185,13 @@ public partial class MainWindow : Window
             SendKeyMode = _currentSendKeyMode,
             FontSize = _currentFontSize,
             FontFamily = _currentFontFamily,
-            TextAreaWidth = _currentTextAreaWidth,
             TextAreaFontFamily = _currentTextAreaFontFamily,
             TextAreaFontSize = _currentTextAreaFontSize,
             TextAreaHeight = textAreaHeight,
             AlwaysOnTop = Topmost,
             SnippetsPanelVisible = _isSnippetsPanelVisible,
             SnippetsPanelWidth = _currentSnippetsPanelWidth,
+            SnippetsFilePath = _currentSnippetsFilePath,
             WindowWidth = restoreBounds.Width,
             WindowHeight = restoreBounds.Height,
             WindowLeft = restoreBounds.Left,

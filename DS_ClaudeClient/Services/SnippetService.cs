@@ -6,48 +6,64 @@ namespace DS_ClaudeClient.Services;
 
 public class SnippetService
 {
-    private readonly string _snippetsFilePath;
+    private string _snippetsFilePath;
 
-    public SnippetService()
+    public string SnippetsFilePath => _snippetsFilePath;
+
+    public SnippetService(string? customPath = null)
     {
-        _snippetsFilePath = GetSnippetsFilePath();
+        _snippetsFilePath = GetSnippetsFilePath(customPath);
     }
 
-    private string GetSnippetsFilePath()
+    public void SetFilePath(string path)
     {
-        // Priority: OneDrive > Documents > AppData
-        var possiblePaths = new[]
+        if (!string.IsNullOrWhiteSpace(path))
         {
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OneDrive", "DS_ClaudeClient"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DS_ClaudeClient"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DS_ClaudeClient")
+            _snippetsFilePath = path;
+        }
+    }
+
+    public static string GetDefaultFilePath()
+    {
+        var oneDrivePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OneDrive", "ds_snippets.json");
+        return oneDrivePath;
+    }
+
+    private string GetSnippetsFilePath(string? customPath)
+    {
+        // Use custom path if provided
+        if (!string.IsNullOrWhiteSpace(customPath) && File.Exists(customPath))
+        {
+            return customPath;
+        }
+
+        // Default: OneDrive/ds_snippets.json
+        var defaultPath = GetDefaultFilePath();
+
+        // Check if default file exists
+        if (File.Exists(defaultPath))
+        {
+            return defaultPath;
+        }
+
+        // Check legacy locations for migration
+        var legacyPaths = new[]
+        {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OneDrive", "DS_ClaudeClient", "snippets.json"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DS_ClaudeClient", "snippets.json"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DS_ClaudeClient", "snippets.json")
         };
 
-        // Check for existing snippets file
-        foreach (var path in possiblePaths)
+        foreach (var legacyPath in legacyPaths)
         {
-            var filePath = Path.Combine(path, "snippets.json");
-            if (File.Exists(filePath))
+            if (File.Exists(legacyPath))
             {
-                return filePath;
+                return legacyPath;
             }
         }
 
-        // Check which directory exists (OneDrive preferred)
-        foreach (var path in possiblePaths)
-        {
-            var parentDir = Path.GetDirectoryName(path);
-            if (parentDir != null && Directory.Exists(parentDir))
-            {
-                Directory.CreateDirectory(path);
-                return Path.Combine(path, "snippets.json");
-            }
-        }
-
-        // Fallback to AppData
-        var fallbackPath = possiblePaths[2];
-        Directory.CreateDirectory(fallbackPath);
-        return Path.Combine(fallbackPath, "snippets.json");
+        // Return default path (will be created when saving)
+        return defaultPath;
     }
 
     public List<Snippet> Load()
@@ -57,12 +73,31 @@ public class SnippetService
             if (File.Exists(_snippetsFilePath))
             {
                 var json = File.ReadAllText(_snippetsFilePath);
-                return JsonSerializer.Deserialize<List<Snippet>>(json) ?? new List<Snippet>();
+
+                // Detect format: Text/Description or Title/Content
+                if (json.Contains("\"Text\"") && json.Contains("\"Description\""))
+                {
+                    // Load from Text/Description format
+                    var importItems = JsonSerializer.Deserialize<List<TextDescriptionImport>>(json) ?? new List<TextDescriptionImport>();
+                    return importItems.Select(item => new Snippet
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Title = item.Description ?? "",
+                        Content = item.Text ?? "",
+                        CreatedAt = DateTime.UtcNow,
+                        ModifiedAt = DateTime.UtcNow
+                    }).ToList();
+                }
+                else
+                {
+                    // Load from native format (Title/Content)
+                    return JsonSerializer.Deserialize<List<Snippet>>(json) ?? new List<Snippet>();
+                }
             }
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error loading snippets: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[SnippetService] Error loading snippets: {ex.Message}");
         }
 
         return GetDefaultSnippets();

@@ -33,7 +33,11 @@
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth status)",
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" release create v1.1.0 --title \"DS Claude Client v1.1.0\" --notes \"$(cat <<''EOF''\n## DS Claude Client v1.1.0\n\n### New Features\n- **Collapsible text area** - Click the ▼ button to collapse, click the bar or ▲ to expand\n- **Width toggle** - Click ↔ to maximize/reduce text area width (uses pixel width from settings)\n- **Version display** - Build number shown in title bar (auto-increments with each build)\n- **Configurable send key** - Choose between Shift+Enter, Ctrl+Enter, or plain Enter in Options\n\n### Improvements\n- Fixed text wrapping in message input\n- Improved installer with license agreement, feature selection, and shortcuts options\n\n### Requirements\n- Windows 10 version 1809 or later\n- WebView2 Runtime (usually pre-installed on Windows 10/11)\n- .NET 10.0 Runtime\nEOF\n)\")",
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" release upload v1.1.0 \"./installer/DS_ClaudeClient-v1.1.0-x64.msi\")",
-      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" release view v1.1.0)"
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" release view v1.1.0)",
+      "Bash(start DS_ClaudeClient.exe)",
+      "Bash(powershell:*)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" release list --limit 5)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

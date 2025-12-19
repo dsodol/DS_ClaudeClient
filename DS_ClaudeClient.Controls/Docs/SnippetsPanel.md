@@ -467,7 +467,11 @@ The control supports diagnostic logging via `Microsoft.Extensions.Logging.ILogge
 
 | Level | Message | When |
 |-------|---------|------|
-| Information | `SnippetsPanel: Using snippets file: {path}` + stack trace | On control load |
+| Information | `SnippetsPanel: Requested path: {path}` | On control load |
+| Information | `SnippetsPanel: SnippetService actual path: {path}` | On control load |
+| Information | `SnippetsPanel: Loaded {count} snippets from {path}` | After loading |
+| Information | `SnippetsPanel: First snippets: {titles}` | After loading (if any) |
+| Trace | `SnippetsPanel: Stack trace: {trace}` | On control load |
 
 ### Usage
 

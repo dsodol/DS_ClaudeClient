@@ -87,6 +87,29 @@ Or with explicit file path:
 - `Title` - Alphabetical by title
 - `DateCreated` - Chronological by creation date
 
+### Column Width Configuration
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `ContentColumnWidth` | `double` | `140` | Width of the Content column |
+| `TitleColumnWidth` | `double` | `80` | Width of the Title column |
+
+**Persisting Column Widths:**
+
+To save/restore column widths, use:
+
+```csharp
+// Before closing - sync actual widths to properties
+SnippetsPanel.SyncColumnWidthsToProperties();
+var contentWidth = SnippetsPanel.ContentColumnWidth;
+var titleWidth = SnippetsPanel.TitleColumnWidth;
+// Save to your settings...
+
+// On load - set from saved values
+SnippetsPanel.ContentColumnWidth = savedContentWidth;
+SnippetsPanel.TitleColumnWidth = savedTitleWidth;
+```
+
 ---
 
 ## Snippet Activation (Double-Click) Configuration

@@ -44,12 +44,20 @@ public static class ControlsConfig
 
     /// <summary>
     /// Gets the full path to the snippets file.
+    /// Default: OneDrive/ds_snippets.json (matches main app for cloud sync)
     /// </summary>
     public static string GetSnippetsPath(string? dataFolderPath = null, string? fileName = null)
     {
-        var basePath = dataFolderPath ?? DefaultDataFolderPath;
-        var file = fileName ?? DefaultSnippetsFileName;
-        return Path.Combine(basePath, file);
+        if (dataFolderPath != null)
+        {
+            var file = fileName ?? DefaultSnippetsFileName;
+            return Path.Combine(dataFolderPath, file);
+        }
+
+        // Default to OneDrive path (matches main app)
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            "OneDrive", "ds_snippets.json");
     }
 
     /// <summary>

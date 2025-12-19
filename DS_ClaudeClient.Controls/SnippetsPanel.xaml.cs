@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -23,6 +24,8 @@ public partial class SnippetsPanel : UserControl
     private SnippetSortMode _currentSortMode = SnippetSortMode.Custom;
     private bool _sortAscending = true;
     private Point _dragStartPoint;
+    private string? _initializationStackTrace;
+    private string? _resolvedFilePath;
 
     #endregion
 
@@ -151,6 +154,16 @@ public partial class SnippetsPanel : UserControl
     /// </summary>
     public ILogger? Logger { get; set; }
 
+    /// <summary>
+    /// Gets the stack trace captured when the snippets file was loaded.
+    /// </summary>
+    public string? InitializationStackTrace => _initializationStackTrace;
+
+    /// <summary>
+    /// Gets the resolved file path used for snippets storage.
+    /// </summary>
+    public string? ResolvedFilePath => _resolvedFilePath;
+
     #endregion
 
     #region Events
@@ -192,9 +205,11 @@ public partial class SnippetsPanel : UserControl
 
     private void InitializeService()
     {
-        var filePath = ResolveSnippetsFilePath();
-        _snippetService = new SnippetService(filePath);
-        Logger?.LogInformation("SnippetsPanel: Using snippets file: {FilePath}", filePath);
+        _initializationStackTrace = new StackTrace(true).ToString();
+        _resolvedFilePath = ResolveSnippetsFilePath();
+        _snippetService = new SnippetService(_resolvedFilePath);
+        Logger?.LogInformation("SnippetsPanel: Using snippets file: {FilePath}\nStack trace:\n{StackTrace}", 
+            _resolvedFilePath, _initializationStackTrace);
     }
 
     private string ResolveSnippetsFilePath()

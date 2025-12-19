@@ -149,6 +149,38 @@ public partial class SnippetsPanel : UserControl
     }
 
     /// <summary>
+    /// Gets or sets the Content column width.
+    /// </summary>
+    public static readonly DependencyProperty ContentColumnWidthProperty =
+        DependencyProperty.Register(
+            nameof(ContentColumnWidth),
+            typeof(double),
+            typeof(SnippetsPanel),
+            new PropertyMetadata(140.0, OnContentColumnWidthChanged));
+
+    public double ContentColumnWidth
+    {
+        get => (double)GetValue(ContentColumnWidthProperty);
+        set => SetValue(ContentColumnWidthProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the Title column width.
+    /// </summary>
+    public static readonly DependencyProperty TitleColumnWidthProperty =
+        DependencyProperty.Register(
+            nameof(TitleColumnWidth),
+            typeof(double),
+            typeof(SnippetsPanel),
+            new PropertyMetadata(80.0, OnTitleColumnWidthChanged));
+
+    public double TitleColumnWidth
+    {
+        get => (double)GetValue(TitleColumnWidthProperty);
+        set => SetValue(TitleColumnWidthProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the logger for diagnostic output.
     /// Uses Microsoft.Extensions.Logging.ILogger.
     /// </summary>
@@ -201,6 +233,23 @@ public partial class SnippetsPanel : UserControl
     {
         InitializeService();
         LoadSnippets();
+        ApplyColumnWidths();
+    }
+
+    private void ApplyColumnWidths()
+    {
+        ContentColumn.Width = ContentColumnWidth;
+        TitleColumn.Width = TitleColumnWidth;
+    }
+
+    /// <summary>
+    /// Updates the column width properties from the actual column widths.
+    /// Call this before saving to persist user's column adjustments.
+    /// </summary>
+    public void SyncColumnWidthsToProperties()
+    {
+        ContentColumnWidth = ContentColumn.Width;
+        TitleColumnWidth = TitleColumn.Width;
     }
 
     private void InitializeService()
@@ -267,6 +316,22 @@ public partial class SnippetsPanel : UserControl
         {
             panel._currentSortMode = (SnippetSortMode)e.NewValue;
             panel.RefreshList();
+        }
+    }
+
+    private static void OnContentColumnWidthChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is SnippetsPanel panel && panel.IsLoaded)
+        {
+            panel.ContentColumn.Width = (double)e.NewValue;
+        }
+    }
+
+    private static void OnTitleColumnWidthChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is SnippetsPanel panel && panel.IsLoaded)
+        {
+            panel.TitleColumn.Width = (double)e.NewValue;
         }
     }
 
@@ -369,6 +434,10 @@ public partial class SnippetsPanel : UserControl
 
     private void SnippetsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        var hasSelection = SnippetsList.SelectedItem is Snippet;
+        EditButton.IsEnabled = hasSelection;
+        DeleteButton.IsEnabled = hasSelection;
+
         if (SnippetsList.SelectedItem is Snippet snippet)
         {
             // Invoke event
@@ -440,9 +509,9 @@ public partial class SnippetsPanel : UserControl
         }
     }
 
-    private void EditSnippet_Click(object sender, RoutedEventArgs e)
+    private void EditSelectedSnippet_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: Snippet snippet })
+        if (SnippetsList.SelectedItem is Snippet snippet)
         {
             var dialog = new SnippetEditDialog(snippet);
             dialog.Owner = Window.GetWindow(this);
@@ -456,9 +525,9 @@ public partial class SnippetsPanel : UserControl
         }
     }
 
-    private void DeleteSnippet_Click(object sender, RoutedEventArgs e)
+    private void DeleteSelectedSnippet_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: Snippet snippet })
+        if (SnippetsList.SelectedItem is Snippet snippet)
         {
             var result = MessageBox.Show(
                 $"Delete snippet '{snippet.Title}'?",

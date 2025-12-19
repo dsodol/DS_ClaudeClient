@@ -5,6 +5,7 @@ using System.Windows.Media;
 using DS_ClaudeClient.Controls.Dialogs;
 using DS_ClaudeClient.Controls.Models;
 using DS_ClaudeClient.Controls.Services;
+using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 
 namespace DS_ClaudeClient.Controls;
@@ -144,6 +145,12 @@ public partial class SnippetsPanel : UserControl
         set => SetValue(OnSnippetActivatedProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the logger for diagnostic output.
+    /// Uses Microsoft.Extensions.Logging.ILogger.
+    /// </summary>
+    public ILogger? Logger { get; set; }
+
     #endregion
 
     #region Events
@@ -187,6 +194,7 @@ public partial class SnippetsPanel : UserControl
     {
         var filePath = ResolveSnippetsFilePath();
         _snippetService = new SnippetService(filePath);
+        Logger?.LogInformation("SnippetsPanel: Using snippets file: {FilePath}", filePath);
     }
 
     private string ResolveSnippetsFilePath()

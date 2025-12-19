@@ -456,25 +456,31 @@ The control supports diagnostic logging via `Microsoft.Extensions.Logging.ILogge
 |----------|------|---------|-------------|
 | `Logger` | `ILogger?` | `null` | Logger instance for diagnostic output |
 
+### Diagnostic Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `InitializationStackTrace` | `string?` | Full stack trace captured when snippets file was loaded |
+| `ResolvedFilePath` | `string?` | The resolved path to the snippets file being used |
+
 ### What Gets Logged
 
 | Level | Message | When |
 |-------|---------|------|
-| Information | `SnippetsPanel: Using snippets file: {path}` | On control load |
+| Information | `SnippetsPanel: Using snippets file: {path}` + stack trace | On control load |
 
 ### Usage
 
 ```csharp
-// In your app, pass your logger to the control
+// Pass your logger to the control
 SnippetsPanel.Logger = myLogger;
+
+// After load, you can access the diagnostic info directly:
+string filePath = SnippetsPanel.ResolvedFilePath;
+string stackTrace = SnippetsPanel.InitializationStackTrace;
 ```
 
-```xml
-<!-- Or set in XAML if your logger is available as a resource -->
-<controls:SnippetsPanel Logger="{Binding Logger}" />
-```
-
-The control logs the resolved snippets file path at Information level when it initializes. This helps diagnose which file is being used when troubleshooting data loading issues.
+The control captures the full stack trace at initialization time. This helps diagnose which code path led to file loading and what file path was resolved.
 
 ---
 

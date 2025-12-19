@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -228,8 +229,8 @@ public partial class ClaudeWebViewControl : UserControl
             // Initialize WebView2 with persistent user data folder
             _initializationStackTrace = new StackTrace(true).ToString();
             _resolvedDataFolderPath = ControlsConfig.GetWebView2Path(DataFolderPath);
-            Logger?.LogInformation("ClaudeWebViewControl: Using WebView2 data folder: {DataFolder}\nStack trace:\n{StackTrace}", 
-                _resolvedDataFolderPath, _initializationStackTrace);
+            Logger?.LogInformation("ClaudeWebViewControl: Using WebView2 data folder: {DataFolder}", _resolvedDataFolderPath);
+            Logger?.LogTrace("ClaudeWebViewControl: Stack trace:\n{StackTrace}", _initializationStackTrace);
             
             if (!Directory.Exists(_resolvedDataFolderPath))
             {

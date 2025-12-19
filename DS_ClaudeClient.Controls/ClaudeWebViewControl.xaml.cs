@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using DS_ClaudeClient.Controls.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Web.WebView2.Core;
 
 namespace DS_ClaudeClient.Controls;
@@ -153,6 +154,12 @@ public partial class ClaudeWebViewControl : UserControl
         set => MessageInput.Text = value;
     }
 
+    /// <summary>
+    /// Gets or sets the logger for diagnostic output.
+    /// Uses Microsoft.Extensions.Logging.ILogger.
+    /// </summary>
+    public ILogger? Logger { get; set; }
+
     #endregion
 
     #region Events
@@ -208,6 +215,7 @@ public partial class ClaudeWebViewControl : UserControl
 
             // Initialize WebView2 with persistent user data folder
             var userDataFolder = ControlsConfig.GetWebView2Path(DataFolderPath);
+            Logger?.LogInformation("ClaudeWebViewControl: Using WebView2 data folder: {DataFolder}", userDataFolder);
             
             if (!Directory.Exists(userDataFolder))
             {

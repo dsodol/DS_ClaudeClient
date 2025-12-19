@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -18,16 +18,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Scripts\ClaudeEnhancements.js">
-      <LogicalName>DS_ClaudeClient.Controls.Scripts.ClaudeEnhancements.js</LogicalName>
-    </EmbeddedResource>
+    <Using Include="System.IO" />
   </ItemGroup>
 
   <ItemGroup>
-    <Page Include="Themes\Generic.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
+    <EmbeddedResource Include="Scripts\ClaudeEnhancements.js">
+      <LogicalName>DS_ClaudeClient.Controls.Scripts.ClaudeEnhancements.js</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

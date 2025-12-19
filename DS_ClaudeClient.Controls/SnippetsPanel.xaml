@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d" 
              d:DesignHeight="500" d:DesignWidth="280"
-             Background="{StaticResource SurfaceBrush}">
+             Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
 
     <UserControl.Resources>
         <ResourceDictionary>
@@ -15,8 +15,8 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Border Background="{StaticResource SurfaceBrush}"
-            BorderBrush="{StaticResource BorderBrush}"
+    <Border Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+            BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
             BorderThickness="1,0,0,0">
         <Grid>
             <Grid.RowDefinitions>
@@ -27,7 +27,7 @@
 
             <!-- Header -->
             <Border Grid.Row="0"
-                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
                     BorderThickness="0,0,0,1"
                     Padding="12,10">
                 <Grid>
@@ -38,7 +38,7 @@
                     <TextBlock Text="Snippets"
                                FontWeight="SemiBold"
                                FontSize="14"
-                               Foreground="{StaticResource TextBrush}"/>
+                               Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                         <Button Style="{StaticResource IconButtonStyle}"
                                 Click="SortSnippets_Click"

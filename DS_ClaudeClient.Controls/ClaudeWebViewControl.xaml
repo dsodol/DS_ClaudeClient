@@ -6,7 +6,7 @@
              xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="800"
-             Background="{StaticResource BackgroundBrush}">
+             Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}">
 
     <UserControl.Resources>
         <ResourceDictionary>
@@ -16,7 +16,7 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Grid Background="{StaticResource BackgroundBrush}">
+    <Grid Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
@@ -38,8 +38,8 @@
         <!-- Native Text Input Area -->
         <Border x:Name="TextAreaBorder"
                 Grid.Row="2"
-                Background="{StaticResource SurfaceBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
+                Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+                BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
                 BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -54,11 +54,11 @@
                          AcceptsTab="True"
                          TextWrapping="Wrap"
                          VerticalScrollBarVisibility="Auto"
-                         Background="{StaticResource SurfaceBrush}"
-                         Foreground="{StaticResource TextBrush}"
+                         Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+                         Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}"
                          BorderThickness="0"
                          Padding="12,10"
-                         CaretBrush="{StaticResource TextBrush}"
+                         CaretBrush="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}"
                          KeyDown="MessageInput_KeyDown"/>
 
                 <!-- Right Side Buttons -->
@@ -105,8 +105,8 @@
         <!-- Collapsed Text Area Bar (hidden by default) -->
         <Border x:Name="CollapsedTextAreaBar"
                 Grid.Row="2"
-                Background="{StaticResource SurfaceBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
+                Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+                BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
                 BorderThickness="0,1,0,0"
                 Height="32"
                 Visibility="Collapsed"
@@ -114,7 +114,7 @@
                 MouseLeftButtonDown="CollapsedTextAreaBar_Click">
             <Grid>
                 <TextBlock Text="Click to expand text area"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                            VerticalAlignment="Center"
                            HorizontalAlignment="Center"
                            FontSize="12"/>

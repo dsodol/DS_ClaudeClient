@@ -18,8 +18,8 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Border Background="{StaticResource BackgroundBrush}"
-            BorderBrush="{StaticResource BorderBrush}"
+    <Border Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
+            BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
             BorderThickness="1"
             CornerRadius="8">
         <Grid>
@@ -31,13 +31,13 @@
 
             <!-- Title Bar -->
             <Border Grid.Row="0"
-                    Background="{StaticResource SurfaceBrush}"
+                    Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
                     CornerRadius="8,8,0,0"
                     MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <Grid>
                     <TextBlock x:Name="DialogTitle"
                                Text="New Snippet"
-                               Foreground="{StaticResource TextBrush}"
+                               Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center"
                                HorizontalAlignment="Center"
@@ -63,7 +63,7 @@
 
                 <TextBlock Grid.Row="0"
                            Text="Title"
-                           Foreground="{StaticResource TextBrush}"
+                           Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}"
                            FontWeight="SemiBold"
                            Margin="0,0,0,6"/>
 
@@ -74,7 +74,7 @@
 
                 <TextBlock Grid.Row="2"
                            Text="Content"
-                           Foreground="{StaticResource TextBrush}"
+                           Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}"
                            FontWeight="SemiBold"
                            Margin="0,0,0,6"/>
 
@@ -89,7 +89,7 @@
 
             <!-- Buttons -->
             <Border Grid.Row="2"
-                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
                     BorderThickness="0,1,0,0"
                     Padding="20,12">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

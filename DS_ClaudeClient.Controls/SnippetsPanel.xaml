@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d" 
              d:DesignHeight="500" d:DesignWidth="280"
-             Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+             Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}">
 
     <UserControl.Resources>
         <ResourceDictionary>
@@ -15,7 +15,7 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Border Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+    <Border Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
             BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
             BorderThickness="1,0,0,0">
         <Grid>
@@ -40,6 +40,20 @@
                                FontSize="14"
                                Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button x:Name="EditButton"
+                                Style="{StaticResource IconButtonStyle}"
+                                Click="EditSelectedSnippet_Click"
+                                ToolTip="Edit Selected"
+                                IsEnabled="False">
+                            <TextBlock Text="✎" FontSize="12"/>
+                        </Button>
+                        <Button x:Name="DeleteButton"
+                                Style="{StaticResource IconButtonStyle}"
+                                Click="DeleteSelectedSnippet_Click"
+                                ToolTip="Delete Selected"
+                                IsEnabled="False">
+                            <TextBlock Text="✕" FontSize="12"/>
+                        </Button>
                         <Button Style="{StaticResource IconButtonStyle}"
                                 Click="SortSnippets_Click"
                                 ToolTip="Sort Snippets">
@@ -82,30 +96,8 @@
                       DragEnter="SnippetsList_DragEnter">
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="Content" Width="140" DisplayMemberBinding="{Binding Preview}"/>
-                        <GridViewColumn Header="Title" Width="80" DisplayMemberBinding="{Binding Title}"/>
-                        <GridViewColumn Header="" Width="50">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <Button Style="{StaticResource IconButtonStyle}"
-                                                Click="EditSnippet_Click"
-                                                Tag="{Binding}"
-                                                ToolTip="Edit"
-                                                Padding="2,0">
-                                            <TextBlock Text="✎" FontSize="10"/>
-                                        </Button>
-                                        <Button Style="{StaticResource IconButtonStyle}"
-                                                Click="DeleteSnippet_Click"
-                                                Tag="{Binding}"
-                                                ToolTip="Delete"
-                                                Padding="2,0">
-                                            <TextBlock Text="✕" FontSize="10"/>
-                                        </Button>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
+                        <GridViewColumn x:Name="ContentColumn" Header="Content" Width="140" DisplayMemberBinding="{Binding Preview}"/>
+                        <GridViewColumn x:Name="TitleColumn" Header="Title" Width="80" DisplayMemberBinding="{Binding Title}"/>
                     </GridView>
                 </ListView.View>
             </ListView>

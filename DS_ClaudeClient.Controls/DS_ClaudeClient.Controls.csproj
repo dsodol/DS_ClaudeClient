@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>DS_ClaudeClient.Controls</RootNamespace>
+    <AssemblyName>DS_ClaudeClient.Controls</AssemblyName>
+    <Version>1.0.0</Version>
+    <Description>Reusable WPF controls for Claude.ai desktop client - includes ClaudeWebViewControl and SnippetsPanel</Description>
+    <Authors>DS</Authors>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2792.45" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts\ClaudeEnhancements.js">
+      <LogicalName>DS_ClaudeClient.Controls.Scripts.ClaudeEnhancements.js</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Include="Themes\Generic.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+
+</Project>

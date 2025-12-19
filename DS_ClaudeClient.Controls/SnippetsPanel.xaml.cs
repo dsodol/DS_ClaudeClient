@@ -208,8 +208,10 @@ public partial class SnippetsPanel : UserControl
         _initializationStackTrace = new StackTrace(true).ToString();
         _resolvedFilePath = ResolveSnippetsFilePath();
         _snippetService = new SnippetService(_resolvedFilePath);
-        Logger?.LogInformation("SnippetsPanel: Using snippets file: {FilePath}\nStack trace:\n{StackTrace}", 
-            _resolvedFilePath, _initializationStackTrace);
+        
+        Logger?.LogInformation("SnippetsPanel: Requested path: {RequestedPath}", _resolvedFilePath);
+        Logger?.LogInformation("SnippetsPanel: SnippetService actual path: {ActualPath}", _snippetService.SnippetsFilePath);
+        Logger?.LogInformation("SnippetsPanel: Stack trace:\n{StackTrace}", _initializationStackTrace);
     }
 
     private string ResolveSnippetsFilePath()
@@ -280,6 +282,16 @@ public partial class SnippetsPanel : UserControl
         if (_snippetService == null) return;
 
         _allSnippets = _snippetService.Load();
+        
+        Logger?.LogInformation("SnippetsPanel: Loaded {Count} snippets from {Path}", 
+            _allSnippets.Count, _snippetService.SnippetsFilePath);
+        
+        if (_allSnippets.Count > 0)
+        {
+            var firstFew = string.Join(", ", _allSnippets.Take(3).Select(s => $"\"{s.Title}\""));
+            Logger?.LogInformation("SnippetsPanel: First snippets: {Titles}", firstFew);
+        }
+        
         RefreshList();
     }
 

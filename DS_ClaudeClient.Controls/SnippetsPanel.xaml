@@ -1,0 +1,114 @@
+<UserControl x:Class="DS_ClaudeClient.Controls.SnippetsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d" 
+             d:DesignHeight="500" d:DesignWidth="280"
+             Background="{StaticResource SurfaceBrush}">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/DS_ClaudeClient.Controls;component/Themes/Generic.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Border Background="{StaticResource SurfaceBrush}"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="1,0,0,0">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Border Grid.Row="0"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="0,0,0,1"
+                    Padding="12,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Snippets"
+                               FontWeight="SemiBold"
+                               FontSize="14"
+                               Foreground="{StaticResource TextBrush}"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button Style="{StaticResource IconButtonStyle}"
+                                Click="SortSnippets_Click"
+                                ToolTip="Sort Snippets">
+                            <TextBlock Text="↕" FontSize="12"/>
+                        </Button>
+                        <Button Style="{StaticResource IconButtonStyle}"
+                                Click="ImportSnippets_Click"
+                                ToolTip="Import Snippets">
+                            <TextBlock Text="📂" FontSize="12"/>
+                        </Button>
+                        <Button Style="{StaticResource IconButtonStyle}"
+                                Click="AddSnippet_Click"
+                                ToolTip="Add Snippet">
+                            <TextBlock Text="+" FontSize="18" FontWeight="Bold"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Search Box -->
+            <TextBox x:Name="SearchBox"
+                     Grid.Row="1"
+                     Style="{StaticResource SearchTextBoxStyle}"
+                     Tag="Search snippets..."
+                     Margin="12,10"
+                     TextChanged="SearchBox_TextChanged"/>
+
+            <!-- Snippets List -->
+            <ListView x:Name="SnippetsList"
+                      Grid.Row="2"
+                      Style="{StaticResource ControlListViewStyle}"
+                      ItemContainerStyle="{StaticResource ControlListViewItemStyle}"
+                      SelectionMode="Single"
+                      SelectionChanged="SnippetsList_SelectionChanged"
+                      MouseDoubleClick="SnippetsList_MouseDoubleClick"
+                      AllowDrop="True"
+                      PreviewMouseLeftButtonDown="SnippetsList_PreviewMouseLeftButtonDown"
+                      PreviewMouseMove="SnippetsList_PreviewMouseMove"
+                      Drop="SnippetsList_Drop"
+                      DragEnter="SnippetsList_DragEnter">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Content" Width="140" DisplayMemberBinding="{Binding Preview}"/>
+                        <GridViewColumn Header="Title" Width="80" DisplayMemberBinding="{Binding Title}"/>
+                        <GridViewColumn Header="" Width="50">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Style="{StaticResource IconButtonStyle}"
+                                                Click="EditSnippet_Click"
+                                                Tag="{Binding}"
+                                                ToolTip="Edit"
+                                                Padding="2,0">
+                                            <TextBlock Text="✎" FontSize="10"/>
+                                        </Button>
+                                        <Button Style="{StaticResource IconButtonStyle}"
+                                                Click="DeleteSnippet_Click"
+                                                Tag="{Binding}"
+                                                ToolTip="Delete"
+                                                Padding="2,0">
+                                            <TextBlock Text="✕" FontSize="10"/>
+                                        </Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </Grid>
+    </Border>
+</UserControl>

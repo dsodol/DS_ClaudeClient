@@ -294,25 +294,31 @@ The control supports diagnostic logging via `Microsoft.Extensions.Logging.ILogge
 |----------|------|---------|-------------|
 | `Logger` | `ILogger?` | `null` | Logger instance for diagnostic output |
 
+### Diagnostic Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `InitializationStackTrace` | `string?` | Full stack trace captured when WebView2 data folder was initialized |
+| `ResolvedDataFolderPath` | `string?` | The resolved path to the WebView2 data folder being used |
+
 ### What Gets Logged
 
 | Level | Message | When |
 |-------|---------|------|
-| Information | `ClaudeWebViewControl: Using WebView2 data folder: {path}` | On control load |
+| Information | `ClaudeWebViewControl: Using WebView2 data folder: {path}` + stack trace | On control load |
 
 ### Usage
 
 ```csharp
-// In your app, pass your logger to the control
+// Pass your logger to the control
 ClaudeWebView.Logger = myLogger;
+
+// After load, you can access the diagnostic info directly:
+string dataFolder = ClaudeWebView.ResolvedDataFolderPath;
+string stackTrace = ClaudeWebView.InitializationStackTrace;
 ```
 
-```xml
-<!-- Or set in XAML if your logger is available as a resource -->
-<controls:ClaudeWebViewControl Logger="{Binding Logger}" />
-```
-
-The control logs the resolved WebView2 data folder path at Information level when it initializes. This helps diagnose which folder is being used for cookies, cache, and session data.
+The control captures the full stack trace at initialization time. This helps diagnose which code path led to initialization and what data folder path was resolved.
 
 ---
 

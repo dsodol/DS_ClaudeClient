@@ -20,9 +20,15 @@ public class AppSettings
     public double WindowLeft { get; set; } = -1;
     public double WindowTop { get; set; } = -1;
     public bool IsMaximized { get; set; } = false;
-    public int TextAreaWidth { get; set; } = 800;
     public string TextAreaFontFamily { get; set; } = "Segoe UI";
     public int TextAreaFontSize { get; set; } = 14;
     public double TextAreaHeight { get; set; } = 100;
     public string SnippetsFilePath { get; set; } = "";
+
+    // Bottom panel section widths
+    public double BottomLeftPanelWidth { get; set; } = 100;
+    public double BottomRightPanelWidth { get; set; } = 100;
+
+    // Download settings
+    public string LastDownloadPath { get; set; } = "";
 }

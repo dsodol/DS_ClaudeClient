@@ -33,6 +33,7 @@ public partial class MainWindow : Window
     private bool _isTextAreaCollapsed = false;
     private double _savedTextAreaHeight = 100;
     private string _currentSnippetsFilePath = "";
+    private string _lastDownloadPath = "";
 
     public MainWindow()
     {
@@ -102,6 +103,15 @@ public partial class MainWindow : Window
             _currentSnippetsPanelWidth = settings.SnippetsPanelWidth;
             UpdateSnippetsPanelVisibility();
 
+            // Restore bottom panel widths
+            if (settings.BottomLeftPanelWidth > 0)
+                BottomLeftColumn.Width = new GridLength(settings.BottomLeftPanelWidth);
+            if (settings.BottomRightPanelWidth > 0)
+                BottomRightColumn.Width = new GridLength(settings.BottomRightPanelWidth);
+
+            // Load last download path
+            _lastDownloadPath = settings.LastDownloadPath;
+
             // Apply snippets file path from settings
             _currentSnippetsFilePath = settings.SnippetsFilePath;
             if (!string.IsNullOrWhiteSpace(_currentSnippetsFilePath))
@@ -148,8 +158,51 @@ public partial class MainWindow : Window
             ClaudeWebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = true;
             ClaudeWebView.CoreWebView2.Settings.IsZoomControlEnabled = true;
 
+            // Configure download behavior - prompt for location
+            ClaudeWebView.CoreWebView2.DownloadStarting += WebView_DownloadStarting;
+
             // Apply font size
             ApplyFontSize(_currentFontSize);
+        }
+    }
+
+    private void WebView_DownloadStarting(object? sender, CoreWebView2DownloadStartingEventArgs e)
+    {
+        // Show save file dialog to let user choose download location
+        var saveDialog = new Microsoft.Win32.SaveFileDialog
+        {
+            FileName = System.IO.Path.GetFileName(e.ResultFilePath),
+            Title = "Save Download As",
+            Filter = "All files (*.*)|*.*"
+        };
+
+        // Use last download path if available
+        if (!string.IsNullOrWhiteSpace(_lastDownloadPath) && System.IO.Directory.Exists(_lastDownloadPath))
+        {
+            saveDialog.InitialDirectory = _lastDownloadPath;
+        }
+        else
+        {
+            saveDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "\\Downloads";
+        }
+
+        if (saveDialog.ShowDialog() == true)
+        {
+            // Set the download path to user's choice
+            e.ResultFilePath = saveDialog.FileName;
+
+            // Store the directory as last download path
+            var directory = System.IO.Path.GetDirectoryName(saveDialog.FileName);
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                _lastDownloadPath = directory;
+                SaveSettings();
+            }
+        }
+        else
+        {
+            // User cancelled - cancel the download
+            e.Cancel = true;
         }
     }
 
@@ -1196,7 +1249,10 @@ public partial class MainWindow : Window
             WindowHeight = restoreBounds.Height,
             WindowLeft = restoreBounds.Left,
             WindowTop = restoreBounds.Top,
-            IsMaximized = WindowState == WindowState.Maximized
+            IsMaximized = WindowState == WindowState.Maximized,
+            BottomLeftPanelWidth = BottomLeftColumn.Width.Value,
+            BottomRightPanelWidth = BottomRightColumn.Width.Value,
+            LastDownloadPath = _lastDownloadPath
         };
 
         _settingsService.Save(settings);

@@ -904,6 +904,79 @@ private async void Input_PreviewKeyDown(object sender, KeyEventArgs e)
 
 ---
 
+## 13. UI Configuration Persistence (REQUIRED)
+
+**All UI configuration must be persistent by default.** When implementing any UI element that has user-configurable state (size, position, width, visibility, etc.), the state MUST be:
+
+1. **Saved automatically** when the user changes it
+2. **Restored automatically** when the application starts
+3. **Added to AppSettings** with a sensible default value
+
+### Examples of UI State That Must Be Persisted
+
+| UI Element | Properties to Persist |
+|------------|----------------------|
+| Resizable panels | Width/Height of each section |
+| Splitters/Dividers | Position (pixel or percentage) |
+| Collapsible sections | Expanded/Collapsed state |
+| Column widths (DataGrid, ListView) | Width of each column |
+| Tree/List selection | Last selected item (optional) |
+| Tab selection | Active tab index |
+| Scroll position | Scroll offset (optional) |
+| Sort order | Column and direction |
+| Filter state | Active filters |
+
+### Implementation Pattern
+
+```csharp
+// 1. Add to AppSettings model
+public class AppSettings
+{
+    // Panel sizes
+    public double LeftPanelWidth { get; set; } = 100;
+    public double RightPanelWidth { get; set; } = 100;
+    public double BottomPanelHeight { get; set; } = 150;
+
+    // Panel visibility
+    public bool SidePanelVisible { get; set; } = true;
+    public bool BottomPanelCollapsed { get; set; } = false;
+}
+
+// 2. Restore on load
+private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+{
+    var settings = _settingsService.Load();
+
+    // Restore panel sizes
+    LeftPanelColumn.Width = new GridLength(settings.LeftPanelWidth);
+    RightPanelColumn.Width = new GridLength(settings.RightPanelWidth);
+    BottomPanelRow.Height = new GridLength(settings.BottomPanelHeight);
+}
+
+// 3. Save on change (in SaveSettings method)
+private void SaveSettings()
+{
+    var settings = new AppSettings
+    {
+        // Capture current panel sizes
+        LeftPanelWidth = LeftPanelColumn.Width.Value,
+        RightPanelWidth = RightPanelColumn.Width.Value,
+        BottomPanelHeight = BottomPanelRow.Height.Value,
+        // ... other settings
+    };
+
+    _settingsService.Save(settings);
+}
+```
+
+### Key Principle
+
+> **If a user can resize, move, collapse, or configure any UI element, that configuration MUST survive application restart.**
+
+This ensures users don't have to repeatedly adjust the UI to their preferences every time they open the application.
+
+---
+
 ## Summary Checklist
 
 - [ ] Project structure with Models/, Services/, Converters/
@@ -916,6 +989,8 @@ private async void Input_PreviewKeyDown(object sender, KeyEventArgs e)
 - [ ] File-based logging with timestamp
 - [ ] WindowChrome for custom title bar with resize
 - [ ] Window state persistence (size, position, maximized)
+- [ ] **All resizable UI elements persist their sizes**
+- [ ] **All collapsible panels persist their state**
 - [ ] WiX installer with UI extension
 - [ ] Feature selection for shortcuts
 - [ ] Launch after install option

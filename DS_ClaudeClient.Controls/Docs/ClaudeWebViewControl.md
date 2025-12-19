@@ -305,7 +305,8 @@ The control supports diagnostic logging via `Microsoft.Extensions.Logging.ILogge
 
 | Level | Message | When |
 |-------|---------|------|
-| Information | `ClaudeWebViewControl: Using WebView2 data folder: {path}` + stack trace | On control load |
+| Information | `ClaudeWebViewControl: Using WebView2 data folder: {path}` | On control load |
+| Trace | `ClaudeWebViewControl: Stack trace: {trace}` | On control load |
 
 ### Usage
 

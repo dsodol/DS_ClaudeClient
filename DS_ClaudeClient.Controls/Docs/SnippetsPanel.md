@@ -446,6 +446,38 @@ public class MainViewModel : INotifyPropertyChanged
 
 ---
 
+## Logging
+
+The control supports diagnostic logging via `Microsoft.Extensions.Logging.ILogger`.
+
+### Logger Property
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `Logger` | `ILogger?` | `null` | Logger instance for diagnostic output |
+
+### What Gets Logged
+
+| Level | Message | When |
+|-------|---------|------|
+| Information | `SnippetsPanel: Using snippets file: {path}` | On control load |
+
+### Usage
+
+```csharp
+// In your app, pass your logger to the control
+SnippetsPanel.Logger = myLogger;
+```
+
+```xml
+<!-- Or set in XAML if your logger is available as a resource -->
+<controls:SnippetsPanel Logger="{Binding Logger}" />
+```
+
+The control logs the resolved snippets file path at Information level when it initializes. This helps diagnose which file is being used when troubleshooting data loading issues.
+
+---
+
 ## Troubleshooting
 
 ### Snippets Not Saving

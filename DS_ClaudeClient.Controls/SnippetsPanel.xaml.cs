@@ -211,7 +211,7 @@ public partial class SnippetsPanel : UserControl
         
         Logger?.LogInformation("SnippetsPanel: Requested path: {RequestedPath}", _resolvedFilePath);
         Logger?.LogInformation("SnippetsPanel: SnippetService actual path: {ActualPath}", _snippetService.SnippetsFilePath);
-        Logger?.LogInformation("SnippetsPanel: Stack trace:\n{StackTrace}", _initializationStackTrace);
+        Logger?.LogTrace("SnippetsPanel: Stack trace:\n{StackTrace}", _initializationStackTrace);
     }
 
     private string ResolveSnippetsFilePath()

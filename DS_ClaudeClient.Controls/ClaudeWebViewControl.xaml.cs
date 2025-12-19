@@ -22,6 +22,8 @@ public partial class ClaudeWebViewControl : UserControl
     private double _savedTextAreaHeight = 100;
     private readonly List<string> _messageHistory = [];
     private int _historyIndex = -1;
+    private string? _initializationStackTrace;
+    private string? _resolvedDataFolderPath;
 
     #endregion
 
@@ -160,6 +162,16 @@ public partial class ClaudeWebViewControl : UserControl
     /// </summary>
     public ILogger? Logger { get; set; }
 
+    /// <summary>
+    /// Gets the stack trace captured when the WebView2 data folder was initialized.
+    /// </summary>
+    public string? InitializationStackTrace => _initializationStackTrace;
+
+    /// <summary>
+    /// Gets the resolved WebView2 data folder path.
+    /// </summary>
+    public string? ResolvedDataFolderPath => _resolvedDataFolderPath;
+
     #endregion
 
     #region Events
@@ -214,15 +226,17 @@ public partial class ClaudeWebViewControl : UserControl
             ClaudeWebView.NavigationCompleted += WebView_NavigationCompleted;
 
             // Initialize WebView2 with persistent user data folder
-            var userDataFolder = ControlsConfig.GetWebView2Path(DataFolderPath);
-            Logger?.LogInformation("ClaudeWebViewControl: Using WebView2 data folder: {DataFolder}", userDataFolder);
+            _initializationStackTrace = new StackTrace(true).ToString();
+            _resolvedDataFolderPath = ControlsConfig.GetWebView2Path(DataFolderPath);
+            Logger?.LogInformation("ClaudeWebViewControl: Using WebView2 data folder: {DataFolder}\nStack trace:\n{StackTrace}", 
+                _resolvedDataFolderPath, _initializationStackTrace);
             
-            if (!Directory.Exists(userDataFolder))
+            if (!Directory.Exists(_resolvedDataFolderPath))
             {
-                Directory.CreateDirectory(userDataFolder);
+                Directory.CreateDirectory(_resolvedDataFolderPath);
             }
 
-            var env = await CoreWebView2Environment.CreateAsync(null, userDataFolder);
+            var env = await CoreWebView2Environment.CreateAsync(null, _resolvedDataFolderPath);
             await ClaudeWebView.EnsureCoreWebView2Async(env);
 
             // Navigate to Claude.ai

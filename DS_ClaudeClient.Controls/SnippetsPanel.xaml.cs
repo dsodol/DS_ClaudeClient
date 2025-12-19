@@ -197,10 +197,16 @@ public partial class SnippetsPanel : UserControl
             return SnippetsFilePath;
         }
 
-        // Priority 2: DataFolderPath + SnippetsFileName
-        var folder = DataFolderPath ?? ControlsConfig.DefaultDataFolderPath;
-        var fileName = SnippetsFileName ?? ControlsConfig.DefaultSnippetsFileName;
-        return Path.Combine(folder, fileName);
+        // Priority 2: Custom DataFolderPath or SnippetsFileName
+        if (!string.IsNullOrWhiteSpace(DataFolderPath) || !string.IsNullOrWhiteSpace(SnippetsFileName))
+        {
+            var folder = DataFolderPath ?? ControlsConfig.DefaultDataFolderPath;
+            var fileName = SnippetsFileName ?? ControlsConfig.DefaultSnippetsFileName;
+            return Path.Combine(folder, fileName);
+        }
+
+        // Priority 3: Zero-config default (OneDrive)
+        return ControlsConfig.GetSnippetsPath();
     }
 
     private static void OnDataFolderPathChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
